@@ -1,3 +1,2 @@
-Hybrid Agent
-"# cab3" 
+Global World
 "# cab4" 

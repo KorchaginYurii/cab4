@@ -1,0 +1,704 @@
+import pygame
+import numpy as np
+from core.config import GRID_SIZE
+#from agents.cabbage_agent import CabbageAgent
+#agent = CabbageAgent()
+import torch
+
+CELL=50
+MARGIN = 2
+
+WHITE = (240,240,240)
+GREEN = (80,200,80)
+BLACK = (30,30,30)
+RED = (220,50,50)
+BLUE = (80,80,255)
+
+
+class Renderer:
+    def __init__(self):
+        pygame.init()
+        self.size = GRID_SIZE * CELL
+        self.screen = pygame.display.set_mode((self.size + 200, self.size + 200))
+        #self.screen = pygame.display.set_mode((400,400))
+        self.overlay = pygame.Surface((self.size, self.size + 80), pygame.SRCALPHA)
+
+        self.show_path = True
+        self.show_goal = True
+        self.show_sector = True
+        self.show_visited = False
+        self.show_coverage = False
+        self.show_turns = False
+        self.font = pygame.font.SysFont("consolas", 18)
+        self.show_memory_map = False
+
+        self.ui_items = [
+            {"name": "A* Path", "key": "show_path", "value": True},
+            {"name": "Coverage Heatmap", "key": "show_coverage", "value": False},
+            {"name": "Visited Heatmap", "key": "show_visited", "value": False},
+            {"name": "Turn Heatmap", "key": "show_turns", "value": False},
+            {"name": "Sector", "key": "show_sector", "value": True},
+            {"name": "Goal", "key": "show_goal", "value": True},
+            {"name": "Memory Map", "key": "show_memory_map", "value": False},
+        ]
+
+    def draw(self, env, debug=None, agent=None):
+
+        self.screen.fill((20, 20, 20))
+
+        # ===== UI =====
+        y_end = self.draw_ui()
+        self.draw_legend(y_end)
+
+        for item in self.ui_items:
+            setattr(self, item["key"], item["value"])
+
+        # =====================================================
+        # MAP
+        # =====================================================
+        memory_map = None
+        memory_seen = None
+
+        if debug is not None and self.show_memory_map:
+            memory_map = debug.get("memory_map", None)
+            memory_seen = debug.get("memory_seen", None)
+
+        for i in range(env.grid.shape[0]):
+            for j in range(env.grid.shape[1]):
+
+                rect = (
+                    j * CELL,
+                    i * CELL,
+                    CELL - MARGIN,
+                    CELL - MARGIN
+                )
+
+                if memory_map is not None:
+                    val = memory_map[i][j]
+                    seen = memory_seen[i][j] if memory_seen is not None else 1
+
+                    if seen == 0:
+                        color = (70, 70, 70)  # unknown
+                    elif val == 1:
+                        color = GREEN  # known cabbage
+                    elif val == -1:
+                        color = BLACK  # known obstacle
+                    elif val == 2:
+                        color = (0, 0, 255)  # base
+                    else:
+                        color = WHITE  # known empty
+
+                else:
+                    val = env.grid[i][j]
+
+                    if val == 1:
+                        color = GREEN
+                    elif val == -1:
+                        color = BLACK
+                    else:
+                        color = WHITE
+
+                pygame.draw.rect(self.screen, color, rect)
+        # =====================================================
+        # HEATMAPS
+        # =====================================================
+        if self.show_visited and hasattr(env, "visited"):
+            self.draw_visited_heatmap(env.visited)
+
+        if self.show_coverage and hasattr(env, "visit_count"):
+            self.draw_coverage_heatmap(env.visit_count)
+
+        if self.show_turns and hasattr(env, "turn_count"):
+            self.draw_turn_heatmap(env.turn_count)
+
+        # ===========================================
+        # FRONTIER
+        # ===========================================
+        if debug is not None and "frontiers" in debug:
+            for fx, fy in debug["frontiers"]:
+                pygame.draw.circle(
+                    self.screen,
+                    (180, 0, 255),
+                    (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                    3
+                )
+        # =====================================================
+        # FRONTIER CLUSTERS
+        # =====================================================
+        frontier_clusters = []
+
+        if debug is not None:
+            frontier_clusters = debug.get("frontier_clusters") or []
+
+        for cluster in frontier_clusters:
+            for fx, fy in cluster:
+                pygame.draw.circle(
+                    self.screen,
+                    (160, 0, 220),
+                    (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                    3
+                )
+        # =====================================================
+        # SELECTED FRONTIER
+        # =====================================================
+        if debug is not None and debug.get("frontier_target", None) is not None:
+            fx, fy = debug["frontier_target"]
+
+            pygame.draw.circle(
+                self.screen,
+                (255, 0, 255),
+                (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                9,
+                3
+            )
+        # =====================================================
+        # SECTOR
+        # =====================================================
+        if (
+                self.show_sector and
+                debug is not None and
+                "sector" in debug and
+                debug["sector"] is not None
+        ):
+            sx, sy = debug["sector"]
+
+            sector_h = debug.get("sector_h", 5)
+            sector_w = debug.get("sector_w", 5)
+
+            x1 = sx * sector_h
+            y1 = sy * sector_w
+
+            w = sector_w * CELL
+            h = sector_h * CELL
+
+            pygame.draw.rect(
+                self.screen,
+                (255, 255, 0),
+                (y1 * CELL, x1 * CELL, w, h),
+                3
+            )
+
+        # =====================================================
+        # GOAL
+        # =====================================================
+        if (
+                self.show_goal and
+                debug is not None and
+                "goal" in debug and
+                debug["goal"] is not None
+        ):
+            gx, gy = debug["goal"]
+
+            pygame.draw.rect(
+                self.screen,
+                (255, 200, 0),
+                (
+                    gy * CELL + 8,
+                    gx * CELL + 8,
+                    CELL - 16,
+                    CELL - 16
+                ),
+                3
+            )
+
+        # =====================================================
+        # PATH
+        # =====================================================
+        if (
+                self.show_path and
+                debug is not None and
+                "path" in debug and
+                debug["path"] is not None
+        ):
+
+            path = debug["path"]
+
+            for i, (px, py) in enumerate(path):
+
+                radius = 4
+
+                if i == 0:
+                    color = (0, 255, 255)
+
+                elif i == len(path) - 1:
+                    color = (255, 255, 0)
+                    radius = 6
+
+                else:
+                    color = (0, 180, 255)
+
+                pygame.draw.circle(
+                    self.screen,
+                    color,
+                    (
+                        py * CELL + CELL // 2,
+                        px * CELL + CELL // 2
+                    ),
+                    radius
+                )
+
+                # соединяющие линии
+                if i > 0:
+                    prev_x, prev_y = path[i - 1]
+
+                    pygame.draw.line(
+                        self.screen,
+                        (0, 140, 220),
+                        (
+                            prev_y * CELL + CELL // 2,
+                            prev_x * CELL + CELL // 2
+                        ),
+                        (
+                            py * CELL + CELL // 2,
+                            px * CELL + CELL // 2
+                        ),
+                        2
+                    )
+
+        # =====================================================
+        # START BASE
+        # =====================================================
+        sx, sy = env.start_pos
+
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 255),
+            (
+                sy * CELL,
+                sx * CELL,
+                CELL - MARGIN,
+                CELL - MARGIN
+            ),
+            5
+        )
+
+        # =====================================================
+        # AGENT
+        # =====================================================
+        x, y = env.pos
+
+        rect = pygame.Rect(
+            y * CELL,
+            x * CELL,
+            CELL - MARGIN,
+            CELL - MARGIN
+        )
+
+        pygame.draw.rect(
+            self.screen,
+            RED,
+            rect,
+            3
+        )
+
+        # =====================================================
+        # HUD
+        # =====================================================
+        if debug is not None:
+
+            y0 = self.size + 5
+
+            total = np.sum(env.initial_grid == 1)
+            remaining = np.sum(env.grid == 1)
+            collected = total - remaining
+
+            step = env.steps
+            max_steps = env.max_steps
+
+            reward = debug.get("reward", 0.0)
+            total_reward = debug.get("total_reward", 0.0)
+
+            mode = debug.get("mode", "COLLECT")
+            dist_home = debug.get("dist_home", 0)
+
+            energy = debug.get("energy", None)
+            max_energy = debug.get("max_energy", None)
+
+            heading = debug.get("heading", 0)
+            knife_on = debug.get("knife_on", False)
+
+            mcts_depth = debug.get("depth", 0)
+
+            # ===== ROW 1 =====
+            self.draw_text(
+                f"STEP: {step}/{max_steps}",
+                10,
+                y0
+            )
+
+            self.draw_text(
+                f"CABBAGE: {collected}/{total}",
+                220,
+                y0
+            )
+
+            self.draw_text(
+                f"MODE: {mode}",
+                450,
+                y0,
+                (0, 255, 0) if "RETURN" in mode else (255, 255, 255)
+            )
+
+            y0 += 22
+
+            # ===== ROW 2 =====
+            self.draw_text(
+                f"HOME_DIST: {dist_home}",
+                10,
+                y0
+            )
+
+            self.draw_text(
+                f"R: {reward:.1f} / {total_reward:.1f}",
+                220,
+                y0
+            )
+
+            self.draw_text(
+                f"DEPTH: {mcts_depth}",
+                450,
+                y0
+            )
+
+            y0 += 22
+
+            # ===== ENERGY =====
+            if energy is not None and max_energy is not None:
+                self.draw_text(
+                    "ENERGY:",
+                    10,
+                    y0
+                )
+
+                self.draw_energy_bar(
+                    100,
+                    y0 + 3,
+                    160,
+                    12,
+                    energy,
+                    max_energy
+                )
+
+            # ===== EFFICIENCY =====
+            energy_used = (
+                max_energy - energy
+                if energy is not None
+                else 0.0
+            )
+
+            if energy_used > 0:
+                efficiency = collected / energy_used
+            else:
+                efficiency = 0.0
+
+            self.draw_text(
+                f"EFF: {efficiency:.2f} cab/%",
+                450,
+                y0,
+                (180, 255, 180)
+            )
+
+            y0 += 22
+
+            # ===== HEADING =====
+            arrows = ["↑", "→", "↓", "←"]
+
+            self.draw_text(
+                f"HEADING: {arrows[int(heading) % 4]}",
+                10,
+                y0,
+                (180, 220, 255)
+            )
+
+            # ===== KNIFE =====
+            knife_color = (
+                (255, 80, 80)
+                if knife_on
+                else
+                (180, 180, 180)
+            )
+
+            self.draw_text(
+                f"KNIFE: {'ON' if knife_on else 'OFF'}",
+                220,
+                y0,
+                knife_color
+            )
+            # ===== Dead Energy Prediction ======
+            required_energy = debug.get("required_energy", None)
+            energy_margin = debug.get("energy_margin", None)
+
+            if required_energy is not None:
+                y0 += 22
+                margin_color = (0, 255, 0) if energy_margin >= 0 else (255, 80, 80)
+
+                self.draw_text(
+                    f"REQ_EN: {required_energy:.1f}",
+                    10,
+                    y0,
+                    margin_color
+                )
+
+                self.draw_text(
+                    f"MARGIN: {energy_margin:.1f}",
+                    220,
+                    y0,
+                    margin_color
+                )
+            y0 += 22
+            # ===== метрики миссии ===
+            self.draw_text(
+                f"E/CAB: {debug.get('energy_per_cabbage', 0):.2f}%",
+                10,
+                y0,
+                (180, 255, 180)
+            )
+
+            self.draw_text(
+                f"TURNS: {debug.get('total_turns', 0)}",
+                220,
+                y0,
+                (255, 220, 180)
+            )
+
+            self.draw_text(
+                f"OVERLAP: {debug.get('overlap_rate', 0):.2f}",
+                400,
+                y0,
+                (255, 180, 180)
+            )
+            y0 += 22
+
+            self.draw_text(
+                f"SECTOR_SW: {debug.get('sector_switches', 0)}",
+                10,
+                y0,
+                (255, 255, 180)
+            )
+
+            y0 += 22
+
+            self.draw_text(
+                f"MEM_COV: {debug.get('memory_coverage', 0):.2f}",
+                10,
+                y0,
+                (180, 220, 255)
+            )
+
+            self.draw_text(
+                f"MEM_OVER: {debug.get('memory_overlap', 0):.2f}",
+                220,
+                y0,
+                (255, 200, 180)
+            )
+            frontier_clusters = debug.get("frontier_clusters", [])
+            frontier_count = sum(len(c) for c in frontier_clusters)
+
+            y0 += 22
+            self.draw_text(
+                f"FRONTIERS: {frontier_count}",
+                10,
+                y0,
+                (220, 160, 255)
+            )
+
+
+        pygame.display.flip()
+
+    def to_screen(self, x, y):
+        return (y * CELL + CELL // 2, x * CELL + CELL // 2)
+
+    def draw_visited_heatmap(self, visited):
+        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+
+        max_v = np.max(visited)
+
+        if max_v <= 1e-6:
+            return
+
+        for i in range(visited.shape[0]):
+            for j in range(visited.shape[1]):
+                val = float(visited[i][j]) / max_v
+
+                if val <= 0.01:
+                    continue
+
+                # синий -> красный
+                red = int(255 * val)
+                blue = int(255 * (1.0 - val))
+                alpha = int(120 * val)
+
+                color = (red, 40, blue, alpha)
+
+                rect = (
+                    j * CELL,
+                    i * CELL,
+                    CELL - MARGIN,
+                    CELL - MARGIN
+                )
+
+                pygame.draw.rect(overlay, color, rect)
+
+        self.screen.blit(overlay, (0, 0))
+
+    def draw_text(self, text, x, y, color=(255, 255, 255)):
+        surface = self.font.render(text, True, color)
+        self.screen.blit(surface, (x, y))
+
+    def draw_bar(self, x, y, w, h, value, color=(0, 255, 0)):
+        pygame.draw.rect(self.screen, (80, 80, 80), (x, y, w, h))
+        pygame.draw.rect(self.screen, color, (x, y, int(w * value), h))
+
+    def draw_legend(self, y_start):
+        x = self.size + 10
+        y = y_start + 10  # небольшой отступ
+
+        items = [
+            ("Agent", (255, 0, 0)),
+            ("Start/Base", (0, 0, 255)),
+            ("Goal", (255, 200, 0)),
+            ("A* Path", (0, 180, 255)),
+            ("Current Sector", (255, 255, 0)),
+            ("Coverage Heatmap", (255, 60, 60)),
+            ("Visited Heatmap", (255, 40, 80)),
+            ("Energy", (255, 255, 0)),
+            ("Turn Heatmap", (255, 80, 0)),
+            ("Frontier", (180, 0, 255)),
+            ("Frontier Cluster", (160, 0, 220)),
+            ("Selected Frontier", (255, 0, 255)),
+            ("Unknown", (70, 70, 70)),
+            ("Known Empty", (240, 240, 240)),
+            ("Known Cabbage", (80, 200, 80)),
+            ("Known Obstacle", (30, 30, 30)),
+        ]
+
+        for name, color in items:
+            pygame.draw.rect(self.screen, color, (x, y, 15, 15))
+            self.draw_text(name, x + 20, y)
+            y += 20
+
+    def draw_ui(self):
+        x = self.size + 10
+        y = 20
+
+        for item in self.ui_items:
+            rect = pygame.Rect(x, y, 16, 16)
+            pygame.draw.rect(self.screen, (200, 200, 200), rect, 2)
+
+            if item["value"]:
+                pygame.draw.line(self.screen, (0, 255, 0), (x, y), (x + 16, y + 16), 2)
+                pygame.draw.line(self.screen, (0, 255, 0), (x + 16, y), (x, y + 16), 2)
+
+            self.draw_text(item["name"], x + 25, y - 2)
+
+            item["rect"] = rect
+            y += 25
+
+        return y  # 🔥 ВАЖНО
+
+    def handle_mouse(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mx, my = event.pos
+
+            for item in self.ui_items:
+                if "rect" in item and item["rect"].collidepoint(mx, my):
+                    item["value"] = not item["value"]
+
+    def draw_energy_bar(self, x, y, w, h, energy, max_energy):
+        ratio = max(0.0, min(1.0, energy / (max_energy + 1e-6)))
+
+        pygame.draw.rect(self.screen, (80, 80, 80), (x, y, w, h))
+        pygame.draw.rect(self.screen, (255, 220, 0), (x, y, int(w * ratio), h))
+        pygame.draw.rect(self.screen, (220, 220, 220), (x, y, w, h), 2)
+
+        self.draw_text(f"{energy:.1f}/{max_energy:.1f}%", x + w + 8, y - 3)
+
+    def draw_coverage_heatmap(self, visit_count):
+        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+
+        max_v = np.max(visit_count)
+
+        if max_v <= 0:
+            return
+
+        for i in range(visit_count.shape[0]):
+            for j in range(visit_count.shape[1]):
+                count = float(visit_count[i][j])
+
+                if count <= 0:
+                    continue
+
+                val = min(1.0, count / max_v)
+
+                # 1 посещение — мягкий голубой
+                # много посещений — красный
+                red = int(255 * val)
+                green = int(120 * (1.0 - val))
+                blue = int(255 * (1.0 - val))
+                alpha = int(70 + 130 * val)
+
+                color = (red, green, blue, alpha)
+
+                rect = (
+                    j * CELL,
+                    i * CELL,
+                    CELL - MARGIN,
+                    CELL - MARGIN
+                )
+
+                pygame.draw.rect(overlay, color, rect)
+
+                # если клетка посещена много раз — подпишем число
+                if count >= 3:
+                    self.draw_text(
+                        str(int(count)),
+                        j * CELL + 5,
+                        i * CELL + 5,
+                        (255, 255, 255)
+                    )
+
+        self.screen.blit(overlay, (0, 0))
+
+    def draw_turn_heatmap(self, turn_count):
+        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+
+        max_v = np.max(turn_count)
+
+        if max_v <= 0:
+            return
+
+        for i in range(turn_count.shape[0]):
+            for j in range(turn_count.shape[1]):
+                count = float(turn_count[i][j])
+
+                if count <= 0:
+                    continue
+
+                val = min(1.0, count / max_v)
+
+                # повороты: жёлтый -> красный
+                red = 255
+                green = int(220 * (1.0 - val))
+                blue = 0
+                alpha = int(80 + 160 * val)
+
+                color = (red, green, blue, alpha)
+
+                rect = (
+                    j * CELL,
+                    i * CELL,
+                    CELL - MARGIN,
+                    CELL - MARGIN
+                )
+
+                pygame.draw.rect(overlay, color, rect)
+
+                if count >= 2:
+                    self.draw_text(
+                        str(int(count)),
+                        j * CELL + 5,
+                        i * CELL + 5,
+                        (255, 255, 255)
+                    )
+
+        self.screen.blit(overlay, (0, 0))
