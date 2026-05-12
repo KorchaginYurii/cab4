@@ -275,6 +275,10 @@ class HybridAgent:
         # если нужен полный доступ:
         # self.memory.observe_full(env)
 
+        # ===== TEAM MEMORY =====
+        self.blackboard.update_shared_memory(self.memory)
+        self.memory = self.blackboard.sync_memory(self.memory)
+
         # синхронизация пути
         self.sync_path_with_position(env)
 

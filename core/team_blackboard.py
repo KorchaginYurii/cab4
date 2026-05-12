@@ -32,3 +32,28 @@ class TeamBlackboard:
     def is_sector_available(self, robot_id, sector_id):
         owner = self.sector_owner(sector_id)
         return owner is None or owner == robot_id
+
+    def update_shared_memory(self, memory):
+        if memory is None:
+            return
+
+        if self.shared_memory is None:
+            self.shared_memory = memory.copy()
+            return
+
+        known = memory.seen == 1
+
+        self.shared_memory.map[known] = memory.map[known]
+        self.shared_memory.seen[known] = 1
+
+    def sync_memory(self, local_memory):
+        if self.shared_memory is None:
+            return local_memory
+
+        known = self.shared_memory.seen == 1
+
+        local_memory.map[known] = self.shared_memory.map[known]
+        local_memory.seen[known] = 1
+
+        return local_memory
+

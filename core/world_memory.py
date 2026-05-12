@@ -156,3 +156,14 @@ class WorldMemory:
                 best = f
 
         return best
+
+    def copy(self):
+        new = WorldMemory()
+
+        new.map = self.map.copy()
+        new.seen = self.seen.copy()
+
+        if hasattr(self, "visit_count"):
+            new.visit_count = self.visit_count.copy()
+
+        return new
