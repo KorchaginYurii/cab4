@@ -1,6 +1,7 @@
 import numpy as np
 from core.world_memory import CABBAGE, OBSTACLE, UNKNOWN
 
+
 class SectorManager:
     def __init__(self, sector_h=10, sector_w=10):
         self.sector_h = sector_h
@@ -112,10 +113,20 @@ class SectorManager:
         nearest = cabbages[np.argmin(dists)]
         return tuple(nearest)
 
-    def choose_sector_energy_aware(self, env, memory, planner, energy_predictor):
+    def choose_sector_energy_aware(
+            self,
+            env,
+            memory,
+            planner,
+            energy_predictor,
+            robot_id=None,
+            blackboard=None
+    ):
         best_sector = None
         best_score = -1e9
         best_required = None
+        robot_id = None,
+        blackboard = None
 
         # если текущий сектор ещё содержит известную капусту — остаёмся
         if self.current_sector is not None:
@@ -131,6 +142,9 @@ class SectorManager:
 
             if cab_count == 0:
                 continue
+            if blackboard is not None and robot_id is not None:
+                if not blackboard.is_sector_available(robot_id, sector_id):
+                    continue
 
             center = self.sector_center(sector_id, memory.map.shape)
 

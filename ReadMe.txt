@@ -73,6 +73,7 @@ LOCAL REACTIVE LAYER
 	не дублируют coverage
 	совместно исследуют frontier
 === Team Blackboard — общая доска задач ===
+=== SectorManager - не выбирает "занятый" другим агентом сектор
 
 
 

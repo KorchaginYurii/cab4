@@ -107,13 +107,15 @@ class HybridAgent:
             env,
             self.memory,
             self.planner,
-            self.energy_predictor
+            self.energy_predictor,
+            robot_id=self.robot_id,
+            blackboard=self.blackboard
         )
 
         if sector is not None:
-            ok = self.blackboard.claim_sector(self.robot_id, sector)
+            claimed = self.blackboard.claim_sector(self.robot_id, sector)
 
-            if not ok:
+            if not claimed:
                 self.sectors.current_sector = None
                 sector = None
         # =====================================================
@@ -471,7 +473,10 @@ class HybridAgent:
             "need_replan": need_replan,
 
             "robot_id": self.robot_id,
-            "claimed_sectors": dict(self.blackboard.claimed_sectors)
+            "claimed_sectors": dict(self.blackboard.claimed_sectors),
+
+            "robot_id": self.robot_id,
+            "claimed_sectors": dict(self.blackboard.claimed_sectors),
         }
 
         # =====================================================
