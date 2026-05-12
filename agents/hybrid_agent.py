@@ -8,6 +8,7 @@ from core.sector_coverage import SectorCoveragePlanner
 from core.energy_predictor import EnergyPredictor
 from core.world_memory import WorldMemory
 from core.frontier_manager import FrontierManager
+from core.config import ACTIONS, GRID_SIZE
 
 class HybridAgent:
     def __init__(self, local_agent=None, max_energy=100):
@@ -27,6 +28,9 @@ class HybridAgent:
         self.sector_switches = 0
         self.memory = WorldMemory()
         self.frontiers = FrontierManager()
+        self.replan_interval = 8
+        self.replan_cooldown = 0
+        self.prev_pos = None
 
     def reset(self):
 
@@ -37,6 +41,9 @@ class HybridAgent:
         self.last_sector = None
         self.sector_switches = 0
         self.memory = WorldMemory()
+        self.replan_interval = 8
+        self.replan_cooldown = 0
+        self.prev_pos = None
 
     def nearest_cabbage(self, env):
         cabbages = np.argwhere(env.grid == 1)
@@ -229,52 +236,135 @@ class HybridAgent:
         return 0
 
     def act(self, env, temp=0):
-
+        # =====================================================
+        # 1. UPDATE MEMORY
+        # =====================================================
         if self.memory.map is None:
             self.memory.reset(env.grid.shape)
 
-        # пока используем полное наблюдение
-        #self.memory.observe_full(env)
-
-        # позже заменим на:
+        # для partial observable режима
         self.memory.observe_local(env, radius=3)
+        # если нужен полный доступ:
+        # self.memory.observe_full(env)
 
-        # ===== выбираем цель =====
-        self.goal = self.choose_goal(env)
+        # синхронизация пути
+        self.sync_path_with_position(env)
+
+        # =====================================================
+        # 2. INIT REPLAN STATE
+        # =====================================================
+        if not hasattr(self, "replan_cooldown"):
+            self.replan_cooldown = 0
+
+        if not hasattr(self, "replan_interval"):
+            self.replan_interval = 5
+
+        if not hasattr(self, "prev_pos"):
+            self.prev_pos = None
 
         remaining = np.sum(env.grid == 1)
 
-        # ===== разрешение доступа к старту =====
         env.allow_start_access = (
                 self.mode == "RETURN_CHARGE"
                 or (self.mode == "RETURN_FINISH" and remaining == 0)
         )
 
-        # ===== строим путь =====
 
-        unknown_policy = "allow"
 
-        if self.mode == "EXPLORE":
-            unknown_policy = "explore"
+        # =====================================================
+        # 3. DECIDE IF REPLAN IS NEEDED
+        # =====================================================
 
-        elif self.mode in ["RETURN_CHARGE", "RETURN_FINISH"]:
-            unknown_policy = "avoid"
+        need_replan = False
 
-        elif self.mode == "COLLECT":
+        if self.goal is None:
+            need_replan = True
+
+        if self.path is None or len(self.path) < 2:
+            need_replan = True
+
+        blocked = self.path_is_blocked(env)
+
+        if blocked:
+            need_replan = True
+            self.replan_cooldown = 0
+
+        if self.replan_cooldown <= 0:
+            need_replan = True
+
+        # если цель уже достигнута
+        if self.goal is not None and env.pos == self.goal:
+            need_replan = True
+
+        # =====================================================
+        # 4. REPLAN ONLY IF NEEDED
+        # =====================================================
+        if need_replan:
+            self.goal = self.choose_goal(env)
+
             unknown_policy = "allow"
 
-        if self.goal is not None:
-            self.path = self.planner.find_path_oriented(
-                env,
-                env.pos,
-                self.goal,
-                memory=self.memory,
-                unknown_policy=unknown_policy
-            )
-        else:
-            self.path = None
+            if self.mode == "EXPLORE":
+                unknown_policy = "explore"
 
-        # ===== считаем переключения секторов =====
+            elif self.mode in ["RETURN_CHARGE", "RETURN_FINISH"]:
+                unknown_policy = "avoid"
+
+            elif self.mode == "COLLECT":
+                unknown_policy = "allow"
+
+            if self.goal is not None:
+                self.path = self.planner.find_path_oriented(
+                    env,
+                    env.pos,
+                    self.goal,
+                    memory=self.memory,
+                    unknown_policy=unknown_policy
+                )
+            else:
+                self.path = None
+
+            self.replan_cooldown = self.replan_interval
+
+        else:
+            self.replan_cooldown -= 1
+
+        # =====================================================
+        # 5. ANTI BACK-AND-FORTH PROTECTION
+        # =====================================================
+        if (
+                self.prev_pos is not None
+                and self.path is not None
+                and len(self.path) >= 2
+                and self.path[1] == self.prev_pos
+                and not self.path_is_blocked(env)
+        ):
+            # путь ведёт сразу назад без необходимости — принудительный replan
+            self.path = None
+            self.replan_cooldown = 0
+
+            self.goal = self.choose_goal(env)
+
+            if self.goal is not None:
+                self.path = self.planner.find_path_oriented(
+                    env,
+                    env.pos,
+                    self.goal,
+                    memory=self.memory,
+                    unknown_policy="allow"
+                )
+
+        # =====================================================
+        # 6. ACTION FROM PATH
+        # =====================================================
+        if self.path is not None and len(self.path) >= 2:
+            action = self.action_from_path(env, self.path)
+        else:
+            action = self.safe_detour_action(env)
+
+        # =====================================================
+        # 7. SECTOR SWITCH METRICS
+        # =====================================================
         sector = self.sectors.current_sector
 
         if not hasattr(self, "last_sector"):
@@ -287,16 +377,9 @@ class HybridAgent:
             self.sector_switches += 1
             self.last_sector = sector
 
-        # ===== выбираем действие =====
-        if self.path is not None and len(self.path) >= 2:
-            action = self.action_from_path(env, self.path)
-        else:
-            if self.local_agent is not None:
-                action, _ = self.local_agent.act(env, temp=temp)
-            else:
-                action = 0
-
-        # ===== метрики =====
+        # =====================================================
+        # 8. METRICS
+        # =====================================================
         total = np.sum(env.initial_grid == 1)
         remaining = np.sum(env.grid == 1)
         collected = total - remaining
@@ -319,7 +402,9 @@ class HybridAgent:
 
         frontiers = self.memory.frontier_cells()
 
-        # ===== debug =====
+        # =====================================================
+        # 9. DEBUG
+        # =====================================================
         debug = {
             "mode": self.mode,
             "goal": self.goal,
@@ -331,6 +416,16 @@ class HybridAgent:
             "sector_switches": self.sector_switches,
 
             "coverage_target": self.goal,
+
+            "frontiers": frontiers,
+            "frontier_count": len(frontiers),
+            "frontier_clusters": getattr(self.frontiers, "frontier_clusters", []),
+            "frontier_target": getattr(self.frontiers, "selected_frontier", None),
+
+            "memory_map": self.memory.map.copy(),
+            "memory_seen": self.memory.seen.copy(),
+            "memory_coverage": self.memory.coverage_rate(),
+            "memory_overlap": self.memory.visited_overlap_rate(),
 
             "energy": env.energy_system.energy,
             "max_energy": env.energy_system.max_energy,
@@ -345,19 +440,17 @@ class HybridAgent:
             "total_turns": total_turns,
             "overlap_cells": overlap_cells,
             "overlap_rate": overlap_rate,
-            "memory_coverage": self.memory.coverage_rate(),
-            "memory_overlap": self.memory.visited_overlap_rate(),
-            "frontiers": frontiers,
-            "frontier_count": len(frontiers),
-            "frontier_clusters" : self.frontiers.frontier_clusters,
-            "frontier_target" : self.frontiers.selected_frontier,
-            "memory_map" : self.memory.map.copy(),
-            "memory_seen" : self.memory.seen.copy(),
 
+            "replan_cooldown": self.replan_cooldown,
+            "need_replan": need_replan,
         }
 
-        return action, debug
+        # =====================================================
+        # 10. UPDATE PREV POS
+        # =====================================================
+        self.prev_pos = env.pos
 
+        return action, debug
     def estimate_path_cost(self, env, path, start_heading=None):
         if path is None or len(path) < 2:
             return 0.0
@@ -394,3 +487,55 @@ class HybridAgent:
                 cost += CUT_COST
 
         return cost
+
+    def path_is_blocked(self, env):
+        if self.path is None or len(self.path) < 2:
+            return False
+
+        next_pos = self.path[1]
+
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        static_blocked = next_pos in env.obstacles
+        dynamic_blocked = next_pos in dynamic_positions
+
+        return static_blocked or dynamic_blocked
+
+    def sync_path_with_position(self, env):
+        if self.path is None:
+            return
+
+        if env.pos in self.path:
+            idx = self.path.index(env.pos)
+            self.path = self.path[idx:]
+        else:
+            self.path = None
+
+    def safe_detour_action(self, env):
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        x, y = env.pos
+
+        for a, (dx, dy) in enumerate(ACTIONS):
+            nx = max(0, min(GRID_SIZE - 1, x + dx))
+            ny = max(0, min(GRID_SIZE - 1, y + dy))
+            np_ = (nx, ny)
+
+            if np_ in env.obstacles:
+                continue
+            if np_ in dynamic_positions:
+                continue
+            if np_ == getattr(self, "prev_pos", None):
+                continue
+
+            return a
+
+        return 0
