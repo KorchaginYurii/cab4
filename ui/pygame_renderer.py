@@ -301,6 +301,15 @@ class Renderer:
             3
         )
 
+        for rid, pos in debug.get("robot_positions", {}).items():
+            rx, ry = pos
+            pygame.draw.circle(
+                self.screen,
+                (0, 255, 180),
+                (ry * CELL + CELL // 2, rx * CELL + CELL // 2),
+                10,
+                2
+            )
         # =====================================================
         # HUD
         # =====================================================

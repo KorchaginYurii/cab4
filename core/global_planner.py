@@ -90,7 +90,17 @@ class AStarPlanner:
         diff = min(diff, 4 - diff)
         return diff * TURN_COST
 
-    def find_path_oriented(self, env, start, goal, start_heading=None, memory=None, unknown_policy="allow"):
+    def find_path_oriented(
+            self,
+            env,
+            start,
+            goal,
+            start_heading=None,
+            memory=None,
+            unknown_policy="allow",
+            robot_id=None,
+            blackboard=None
+    ):
         if start == goal:
             return [start]
 
@@ -106,6 +116,22 @@ class AStarPlanner:
         g_score = {start_state: 0.0}
 
         best_goal_state = None
+        #карта
+        h, w = env.grid.shape
+
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        robot_positions = set()
+
+        if blackboard is not None:
+            robot_positions = set(blackboard.robot_positions.values())
+
+            if robot_id is not None and robot_id in blackboard.robot_positions:
+                robot_positions.discard(blackboard.robot_positions[robot_id])
 
         while open_set:
             _, current = heapq.heappop(open_set)
@@ -117,19 +143,17 @@ class AStarPlanner:
                 break
 
             for dx, dy in ACTIONS:
-                nx = max(0, min(GRID_SIZE - 1, x + dx))
-                ny = max(0, min(GRID_SIZE - 1, y + dy))
+                nx = max(0, min(h - 1, x + dx))
+                ny = max(0, min(w - 1, y + dy))
 
                 neighbor_pos = (nx, ny)
 
-                dynamic_positions = (
-                    env.dynamic_obstacles.positions()
-                    if hasattr(env, "dynamic_obstacles")
-                    else set()
-                )
-
                 if neighbor_pos in dynamic_positions:
                     continue
+
+                if blackboard is not None:
+                  if neighbor_pos in robot_positions:
+                        continue
 
                 # ===== static obstacles =====
                 if memory is not None and memory.map is not None:

@@ -87,7 +87,9 @@ class HybridAgent:
             env,
             env.pos,
             env.start_pos,
-            memory=self.memory
+            memory=self.memory,
+            robot_id=self.robot_id,
+            blackboard=self.blackboard
         )
 
         if path_home is None:
@@ -197,7 +199,9 @@ class HybridAgent:
             env.pos,
             cabbage,
             memory=self.memory,
-            unknown_policy="avoid"
+            unknown_policy="avoid",
+            robot_id=self.robot_id,
+            blackboard=self.blackboard
         )
 
         if path_to_cabbage is None:
@@ -221,7 +225,9 @@ class HybridAgent:
             env.start_pos,
             start_heading=env.heading,
             memory=self.memory,
-            unknown_policy="avoid"
+            unknown_policy="avoid",
+            robot_id=self.robot_id,
+            blackboard=self.blackboard
         )
 
         if path_back is None:
@@ -351,7 +357,9 @@ class HybridAgent:
                     env.pos,
                     self.goal,
                     memory=self.memory,
-                    unknown_policy=unknown_policy
+                    unknown_policy=unknown_policy,
+                    robot_id=self.robot_id,
+                    blackboard=self.blackboard
                 )
             else:
                 self.path = None
@@ -383,7 +391,9 @@ class HybridAgent:
                     env.pos,
                     self.goal,
                     memory=self.memory,
-                    unknown_policy="allow"
+                    unknown_policy="allow",
+                    robot_id=self.robot_id,
+                    blackboard=self.blackboard
                 )
 
         # =====================================================
@@ -481,6 +491,8 @@ class HybridAgent:
 
             "robot_id": self.robot_id,
             "claimed_sectors": dict(self.blackboard.claimed_sectors),
+
+            "robot_positions": dict(self.blackboard.robot_positions)
         }
 
         # =====================================================
