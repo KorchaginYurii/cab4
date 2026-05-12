@@ -98,6 +98,16 @@ class Renderer:
                     else:
                         color = WHITE
 
+                if hasattr(env, "dynamic_obstacles"):
+                    for x, y in env.dynamic_obstacles.positions():
+                        pygame.draw.circle(
+                            self.screen,
+                       (255, 120, 0),
+                      (y * CELL + CELL // 2, x * CELL + CELL // 2),
+                            CELL // 3
+                        )
+
+
                 pygame.draw.rect(self.screen, color, rect)
         # =====================================================
         # HEATMAPS
@@ -570,6 +580,7 @@ class Renderer:
             ("Known Empty", (240, 240, 240)),
             ("Known Cabbage", (80, 200, 80)),
             ("Known Obstacle", (30, 30, 30)),
+            ("Dynamic Obstacle", (255, 120, 0)),
         ]
 
         for name, color in items:

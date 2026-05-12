@@ -31,6 +31,10 @@ class ReplayEnvView:
         self.energy_system.energy = frame.get("energy", 0.0)
         self.energy_system.max_energy = frame.get("max_energy", 100.0)
 
+        dynamic_positions = frame.get("dynamic_obstacles", [])
+
+        self.dynamic_obstacles = type("DynamicObstacleView", (), {})()
+        self.dynamic_obstacles.positions = lambda: set(map(tuple, dynamic_positions))
 
 def choose_replay(folder="replays"):
     files = [f for f in os.listdir(folder) if f.endswith(".pkl")]

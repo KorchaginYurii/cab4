@@ -49,6 +49,12 @@ class ReplayRecorder:
             "total_turns": debug.get("total_turns") if debug else 0,
             "overlap_rate": debug.get("overlap_rate") if debug else 0.0,
             "sector_switches": debug.get("sector_switches") if debug else 0,
+
+            "dynamic_obstacles": (
+                list(env.dynamic_obstacles.positions())
+                if hasattr(env, "dynamic_obstacles")
+                else []
+            ),
         }
 
         self.frames.append(frame)

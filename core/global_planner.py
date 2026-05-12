@@ -122,11 +122,17 @@ class AStarPlanner:
 
                 neighbor_pos = (nx, ny)
 
+                dynamic_positions = (
+                    env.dynamic_obstacles.positions()
+                    if hasattr(env, "dynamic_obstacles")
+                    else set()
+                )
+
                 if memory is not None and memory.map is not None:
                     if memory.map[nx, ny] == OBSTACLE:
                         continue
                 else:
-                    if neighbor_pos in env.obstacles:
+                    if neighbor_pos in env.obstacles or neighbor_pos in dynamic_positions:
                         continue
 
 

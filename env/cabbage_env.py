@@ -4,6 +4,8 @@ from collections import deque
 from core.config import GRID_SIZE, ACTIONS
 from core.energy import EnergySystem
 from core.config import DIRECTIONS, MOVE_COST, TURN_COST, CUT_COST
+from core.dynamic_obstacles import DynamicObstacleManager
+import copy
 
 class CabbageEnv:
     def __init__(self):
@@ -14,6 +16,7 @@ class CabbageEnv:
         self.energy_system = EnergySystem(max_energy=100.0)
         self.heading = 0  # 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
         self.knife_on = False
+        self.dynamic_obstacles = DynamicObstacleManager(count=2, move_prob=0.3)
 
     def reset(self, obs_min=0.05, obs_max=0.30, cab_min=0.30, cab_max=0.70):
         self.steps = 0
@@ -43,6 +46,7 @@ class CabbageEnv:
         self.obstacles = set()
         free_cells = [(i, j) for i in range(GRID_SIZE) for j in range(GRID_SIZE)]
         free_cells.remove(self.pos)
+        self.dynamic_obstacles.reset(self)
 
         random.shuffle(free_cells)
 
@@ -142,12 +146,15 @@ class CabbageEnv:
 
         new.energy_system.energy = self.energy_system.energy
         new.energy_system.max_energy = self.energy_system.max_energy
+        new.dynamic_obstacles = copy.deepcopy(self.dynamic_obstacles)
+
         return new
 
     def step(self, a):
 
         if hasattr(self, "done") and self.done:
             return 0.0, True
+
 
         self.visited *= 0.99
         self.steps += 1
@@ -175,7 +182,7 @@ class CabbageEnv:
         r = -0.05
 
         # препятствия
-        if (nx, ny) in self.obstacles:
+        if (nx, ny) in self.obstacles or (nx, ny) in self.dynamic_obstacles.positions():
             nx, ny = x, y
             r -= 1
 
@@ -220,6 +227,8 @@ class CabbageEnv:
             r -= 0.2
 
         self.pos = (nx, ny)
+
+        self.dynamic_obstacles.step(self)
 
         # =========================
         # 🔥 ВОЗВРАТ ДОМОЙ (reward shaping)
