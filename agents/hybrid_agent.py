@@ -9,10 +9,14 @@ from core.energy_predictor import EnergyPredictor
 from core.world_memory import WorldMemory
 from core.frontier_manager import FrontierManager
 from core.config import ACTIONS, GRID_SIZE
+from core.team_blackboard import TeamBlackboard
 
 class HybridAgent:
-    def __init__(self, local_agent=None, max_energy=100):
+    def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
         self.local_agent = local_agent
+        self.robot_id = robot_id
+        self.blackboard = blackboard or TeamBlackboard()
+
         if self.local_agent is None:
             print("⚠️ HybridAgent without local RL agent")
         else:
@@ -31,6 +35,8 @@ class HybridAgent:
         self.replan_interval = 8
         self.replan_cooldown = 0
         self.prev_pos = None
+
+
 
     def reset(self):
 
@@ -104,6 +110,12 @@ class HybridAgent:
             self.energy_predictor
         )
 
+        if sector is not None:
+            ok = self.blackboard.claim_sector(self.robot_id, sector)
+
+            if not ok:
+                self.sectors.current_sector = None
+                sector = None
         # =====================================================
         # 5. ЕСЛИ СЕКТОР НАЙДЕН — ПРОВЕРЯЕМ ЭНЕРГИЮ НА СЕКТОР
         # =====================================================
@@ -162,6 +174,18 @@ class HybridAgent:
         if cabbage is None:
             self.mode = "RETURN_FINISH"
             return env.start_pos
+
+        # ===========================
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        if self.goal in dynamic_positions:
+            self.path = None
+            self.goal = None
+            self.replan_cooldown = 0
 
         # =====================================================
         # 8. СТРОИМ ПУТЬ ДО КАПУСТЫ
@@ -236,6 +260,8 @@ class HybridAgent:
         return 0
 
     def act(self, env, temp=0):
+
+        self.blackboard.update_robot(self.robot_id, env.pos)
         # =====================================================
         # 1. UPDATE MEMORY
         # =====================================================
@@ -443,6 +469,9 @@ class HybridAgent:
 
             "replan_cooldown": self.replan_cooldown,
             "need_replan": need_replan,
+
+            "robot_id": self.robot_id,
+            "claimed_sectors": dict(self.blackboard.claimed_sectors)
         }
 
         # =====================================================
@@ -500,10 +529,13 @@ class HybridAgent:
             else set()
         )
 
-        static_blocked = next_pos in env.obstacles
-        dynamic_blocked = next_pos in dynamic_positions
+        if next_pos in dynamic_positions:
+            return True
 
-        return static_blocked or dynamic_blocked
+        if next_pos in env.obstacles:
+            return True
+
+        return False
 
     def sync_path_with_position(self, env):
         if self.path is None:

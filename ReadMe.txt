@@ -39,4 +39,41 @@
 	видеть что путь стал невалидным
 		↓
 	мгновенно перестраивать маршрут	
+=================================================
+= текущий уровень =
+=================================================
+GLOBAL REASONING
+	HybridAgent
+COGNITIVE MAP
+	WorldMemory
+EXPLORATION
+	FrontierManager
+MISSION OPTIMIZATION
+	SectorManager
+	CoveragePlanner
+	EnergyPredictor
+NAVIGATION
+	A*
+	orientation-aware
+	unknown-aware
+	dynamic replanning
+LOCAL REACTIVE LAYER
+	safe_detour_action
+	dynamic obstacle avoidance
 	
+#########################################	
+==== Multi-Agent Coordination ===========
+#########################################	
+То есть:
+	2+ роботов
+которые:
+	делят сектора
+	не сталкиваются
+	обмениваются memory
+	не дублируют coverage
+	совместно исследуют frontier
+=== Team Blackboard — общая доска задач ===
+
+
+
+

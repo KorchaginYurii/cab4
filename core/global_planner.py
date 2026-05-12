@@ -128,11 +128,15 @@ class AStarPlanner:
                     else set()
                 )
 
+                if neighbor_pos in dynamic_positions:
+                    continue
+
+                # ===== static obstacles =====
                 if memory is not None and memory.map is not None:
                     if memory.map[nx, ny] == OBSTACLE:
                         continue
                 else:
-                    if neighbor_pos in env.obstacles or neighbor_pos in dynamic_positions:
+                    if neighbor_pos in env.obstacles:
                         continue
 
 
