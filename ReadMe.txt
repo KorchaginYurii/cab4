@@ -93,8 +93,9 @@ MAP_W = 80
 вся логика
 env = CabbageEnv(MAP_H, MAP_W)
 h, w = env.grid.shape
-
-
+==================
+= adaptive renderer scaling
+==================
 
 
 

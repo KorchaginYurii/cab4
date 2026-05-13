@@ -1,10 +1,19 @@
 import torch
 
+WINDOW_W = 1600
+WINDOW_H = 900
+
+HUD_W = 260
+HUD_H = 180
+
+MIN_CELL = 4
+MAX_CELL = 64
+
 # ===== ENV =====
-MAP_H = 12
-MAP_W = 10
+MAP_H = 20
+MAP_W = 30
 VISION_SIZE = 7
-#MAX_STEPS = 200
+
 
 # ===== ACTIONS =====
 ACTIONS = [

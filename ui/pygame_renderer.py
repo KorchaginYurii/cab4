@@ -1,11 +1,11 @@
 import pygame
 import numpy as np
-from core.config import MAP_H, MAP_W
+from core.config import MAP_H, MAP_W, WINDOW_W, WINDOW_H, HUD_W, HUD_H, MIN_CELL,MAX_CELL
 #from agents.cabbage_agent import CabbageAgent
 #agent = CabbageAgent()
 import torch
 
-CELL=50
+
 MARGIN = 2
 
 WHITE = (240,240,240)
@@ -18,15 +18,28 @@ BLUE = (80,80,255)
 class Renderer:
     def __init__(self):
         pygame.init()
-        self.map_h = MAP_H * CELL
-        self.map_w = MAP_W * CELL
+
+        usable_w = WINDOW_W - HUD_W
+        usable_h = WINDOW_H - HUD_H
+
+        cell_w = usable_w // MAP_W
+        cell_h = usable_h // MAP_H
+
+        self.cell = max(
+            MIN_CELL,
+            min(MAX_CELL, min(cell_w, cell_h))
+        )
+
+
+        self.map_h = MAP_H * self.cell
+        self.map_w = MAP_W * self.cell
 
         self.screen = pygame.display.set_mode(
-            (self.map_w + 200, self.map_h + 200)
+            (self.map_w + HUD_W, self.map_h + HUD_H)
         )
 
         self.overlay = pygame.Surface(
-            (self.map_w, self.map_h + 80),
+            (self.map_w, self.map_h),
             pygame.SRCALPHA
         )
 
@@ -74,10 +87,10 @@ class Renderer:
             for j in range(env.grid.shape[1]):
 
                 rect = (
-                    j * CELL,
-                    i * CELL,
-                    CELL - MARGIN,
-                    CELL - MARGIN
+                    j * self.cell,
+                    i * self.cell,
+                    self.cell - MARGIN,
+                    self.cell - MARGIN
                 )
 
                 if memory_map is not None:
@@ -110,8 +123,8 @@ class Renderer:
                         pygame.draw.circle(
                             self.screen,
                        (255, 120, 0),
-                      (y * CELL + CELL // 2, x * CELL + CELL // 2),
-                            CELL // 3
+                      (y * self.cell + self.cell // 2, x * self.cell + self.cell // 2),
+                            self.cell // 3
                         )
 
 
@@ -136,7 +149,7 @@ class Renderer:
                 pygame.draw.circle(
                     self.screen,
                     (180, 0, 255),
-                    (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                    (fy * self.cell + self.cell // 2, fx * self.cell + self.cell // 2),
                     3
                 )
         # =====================================================
@@ -152,7 +165,7 @@ class Renderer:
                 pygame.draw.circle(
                     self.screen,
                     (160, 0, 220),
-                    (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                    (fy * self.cell + self.cell // 2, fx * self.cell + self.cell // 2),
                     3
                 )
         # =====================================================
@@ -164,7 +177,7 @@ class Renderer:
             pygame.draw.circle(
                 self.screen,
                 (255, 0, 255),
-                (fy * CELL + CELL // 2, fx * CELL + CELL // 2),
+                (fy * self.cell + self.cell // 2, fx * self.cell + self.cell // 2),
                 9,
                 3
             )
@@ -185,13 +198,13 @@ class Renderer:
             x1 = sx * sector_h
             y1 = sy * sector_w
 
-            w = sector_w * CELL
-            h = sector_h * CELL
+            w = sector_w * self.cell
+            h = sector_h * self.cell
 
             pygame.draw.rect(
                 self.screen,
                 (255, 255, 0),
-                (y1 * CELL, x1 * CELL, w, h),
+                (y1 * self.cell, x1 * self.cell, w, h),
                 3
             )
 
@@ -210,10 +223,10 @@ class Renderer:
                 self.screen,
                 (255, 200, 0),
                 (
-                    gy * CELL + 8,
-                    gx * CELL + 8,
-                    CELL - 16,
-                    CELL - 16
+                    gy * self.cell + 8,
+                    gx * self.cell + 8,
+                    self.cell - 16,
+                    self.cell - 16
                 ),
                 3
             )
@@ -248,8 +261,8 @@ class Renderer:
                     self.screen,
                     color,
                     (
-                        py * CELL + CELL // 2,
-                        px * CELL + CELL // 2
+                        py * self.cell + self.cell // 2,
+                        px * self.cell + self.cell // 2
                     ),
                     radius
                 )
@@ -262,12 +275,12 @@ class Renderer:
                         self.screen,
                         (0, 140, 220),
                         (
-                            prev_y * CELL + CELL // 2,
-                            prev_x * CELL + CELL // 2
+                            prev_y * self.cell + self.cell // 2,
+                            prev_x * self.cell + self.cell // 2
                         ),
                         (
-                            py * CELL + CELL // 2,
-                            px * CELL + CELL // 2
+                            py * self.cell + self.cell // 2,
+                            px * self.cell + self.cell // 2
                         ),
                         2
                     )
@@ -281,10 +294,10 @@ class Renderer:
             self.screen,
             (0, 0, 255),
             (
-                sy * CELL,
-                sx * CELL,
-                CELL - MARGIN,
-                CELL - MARGIN
+                sy * self.cell,
+                sx * self.cell,
+                self.cell - MARGIN,
+                self.cell - MARGIN
             ),
             5
         )
@@ -295,10 +308,10 @@ class Renderer:
         x, y = env.pos
 
         rect = pygame.Rect(
-            y * CELL,
-            x * CELL,
-            CELL - MARGIN,
-            CELL - MARGIN
+            y * self.cell,
+            x * self.cell,
+            self.cell - MARGIN,
+            self.cell - MARGIN
         )
 
         pygame.draw.rect(
@@ -313,7 +326,7 @@ class Renderer:
             pygame.draw.circle(
                 self.screen,
                 (0, 255, 180),
-                (ry * CELL + CELL // 2, rx * CELL + CELL // 2),
+                (ry * self.cell + self.cell // 2, rx * self.cell + self.cell // 2),
                 10,
                 2
             )
@@ -532,7 +545,7 @@ class Renderer:
         pygame.display.flip()
 
     def to_screen(self, x, y):
-        return (y * CELL + CELL // 2, x * CELL + CELL // 2)
+        return (y * self.cell + self.cell // 2, x * self.cell + self.cell // 2)
 
     def draw_visited_heatmap(self, visited):
         overlay = pygame.Surface((self.map_h, self.map_w), pygame.SRCALPHA)
@@ -557,10 +570,10 @@ class Renderer:
                 color = (red, 40, blue, alpha)
 
                 rect = (
-                    j * CELL,
-                    i * CELL,
-                    CELL - MARGIN,
-                    CELL - MARGIN
+                    j * self.cell,
+                    i * self.cell,
+                    self.cell - MARGIN,
+                    self.cell - MARGIN
                 )
 
                 pygame.draw.rect(overlay, color, rect)
@@ -667,10 +680,10 @@ class Renderer:
                 color = (red, green, blue, alpha)
 
                 rect = (
-                    j * CELL,
-                    i * CELL,
-                    CELL - MARGIN,
-                    CELL - MARGIN
+                    j * self.cell,
+                    i * self.cell,
+                    self.cell - MARGIN,
+                    self.cell - MARGIN
                 )
 
                 pygame.draw.rect(overlay, color, rect)
@@ -679,8 +692,8 @@ class Renderer:
                 if count >= 3:
                     self.draw_text(
                         str(int(count)),
-                        j * CELL + 5,
-                        i * CELL + 5,
+                        j * self.cell + 5,
+                        i * self.cell + 5,
                         (255, 255, 255)
                     )
 
@@ -712,10 +725,10 @@ class Renderer:
                 color = (red, green, blue, alpha)
 
                 rect = (
-                    j * CELL,
-                    i * CELL,
-                    CELL - MARGIN,
-                    CELL - MARGIN
+                    j * self.cell,
+                    i * self.cell,
+                    self.cell - MARGIN,
+                    self.cell - MARGIN
                 )
 
                 pygame.draw.rect(overlay, color, rect)
@@ -723,8 +736,8 @@ class Renderer:
                 if count >= 2:
                     self.draw_text(
                         str(int(count)),
-                        j * CELL + 5,
-                        i * CELL + 5,
+                        j * self.cell + 5,
+                        i * self.cell + 5,
                         (255, 255, 255)
                     )
 
