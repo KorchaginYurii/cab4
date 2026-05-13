@@ -21,9 +21,20 @@ class CabbageEnv:
         self.height = height
         self.width = width
 
-    def reset(self, obs_min=0.05, obs_max=0.30, cab_min=0.30, cab_max=0.70):
-        self.steps = 0
+    def reset(
+            self,
+            obs_min=0.05,
+            obs_max=0.30,
+            cab_min=0.30,
+            cab_max=0.70,
+            seed=None
+    ):
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
 
+        self.steps = 0
+        self.recharge_count = 0
 
         total = self.height * self.width
 
@@ -264,6 +275,7 @@ class CabbageEnv:
         # ===== зарядка на базе =====
         if at_start and np.sum(self.grid == 1) > 0:
             self.energy_system.recharge()
+            self.recharge_count += 1
             r += 5
 
         # ===== reward за возврат =====

@@ -136,7 +136,46 @@ h, w = env.grid.shape
 	NORMAL   — обычное движение
 	CAREFUL  — рядом dynamic obstacles
 	SAFE_RETURN — низкая энергия, путь домой
-
+=================================================
+= текущий уровень =
+=================================================
+Фактически система уже включает:
+	global planning
+	local avoidance
+	dynamic replanning
+	partial observability
+	persistent memory
+	frontier exploration
+	energy-aware mission planning
+	dynamic obstacle prediction
+	shared multi-agent infrastructure
+	adaptive risk behavior
+И что особенно круто — всё это уже:
+	анализируется через replay
+	сравнивается через replay_compare
+	визуализируется heatmaps
+То есть у тебя уже не просто агент, а полноценная:
+	robotics experimentation platform
+Следующий большой скачок будет уже в сторону:
+	learning from experience
+	а не только hand-crafted planning.
+Например:
+агент начинает запоминать:
+	- опасные зоны
+	- дорогие маршруты
+	- где часто бывают dynamic obstacles
+	- какие sectors выгоднее
+И постепенно улучшает стратегию между миссиями.
+==============================================
+===== Benchmark Runner ==========
+=========================================
+прогоняет агента по списку seed-карт и сохраняет таблицу результатов
+Он будет:
+	1. брать список seed
+	2. создавать одинаковые карты
+	3. запускать агента
+	4. собирать метрики
+	5. сохранять CSV
 
 
 
