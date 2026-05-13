@@ -8,9 +8,10 @@ from ui.pygame_renderer import Renderer
 
 from core.checkpoint import CheckpointManager
 from core.replay_recorder import ReplayRecorder
+from core.config import MAP_H, MAP_W
 
 recorder = ReplayRecorder()
-env = CabbageEnv()
+env = CabbageEnv(MAP_H, MAP_W)
 env.reset()
 
 # ======================================

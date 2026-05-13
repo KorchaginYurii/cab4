@@ -1,8 +1,9 @@
 from core.global_planner import AStarPlanner
 from env.cabbage_env import CabbageEnv
+from core.config import MAP_H, MAP_W
 
 if __name__ == "__main__":
-    env = CabbageEnv()
+    env = CabbageEnv(MAP_H, MAP_W)
     env.reset()
 
     planner = AStarPlanner()

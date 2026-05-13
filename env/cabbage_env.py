@@ -9,6 +9,7 @@ import copy
 
 class CabbageEnv:
     def __init__(self, height=10, width=10):
+        self.done = False
         self.flood_cache = {}
         self.max_steps = 200  # дефолт (любое безопасное значение)
         self.obstacle_ratio = 0.0
@@ -52,7 +53,7 @@ class CabbageEnv:
         self.obstacles = set()
         free_cells = [(i, j) for i in range(h) for j in range(w)]
         free_cells.remove(self.pos)
-        self.dynamic_obstacles.reset(self)
+
 
         random.shuffle(free_cells)
 
@@ -83,9 +84,6 @@ class CabbageEnv:
         if not cabbage_set.issubset(reachable_no_start):
             return self.reset(obs_min, obs_max, cab_min, cab_max)
 
-        for (i, j) in cabbage_cells:
-            self.grid[i][j] = 1
-
         # ===== остальное =====
         self.visited = np.zeros_like(self.grid, dtype=np.float32)
         self.visit_count = np.zeros_like(self.grid, dtype=np.float32)
@@ -114,8 +112,12 @@ class CabbageEnv:
         self.grid[sx][sy] = 0
         self.visit_count[sx][sy] += 1
 
+        self.dynamic_obstacles.reset(self)
+
     def clone(self):
-        new = CabbageEnv()
+        new = CabbageEnv(self.height, self.width)
+        new.height = self.height
+        new.width = self.width
 
         new.grid = self.grid.copy()
         new.pos = tuple(self.pos)
@@ -169,8 +171,10 @@ class CabbageEnv:
         dx, dy = ACTIONS[a]
         x, y = self.pos
 
-        nx = max(0, min(9, x + dx))
-        ny = max(0, min(9, y + dy))
+        h, w = self.grid.shape
+
+        nx = max(0, min(h - 1, x + dx))
+        ny = max(0, min(w - 1, y + dy))
 
         energy_spent = 0.0
 
@@ -319,10 +323,11 @@ class CabbageEnv:
         x, y = pos
 
         blocked = 0
+        h, w = self.grid.shape
 
         for dx, dy in ACTIONS:
-            nx = max(0, min(9, x + dx))
-            ny = max(0, min(9, y + dy))
+            nx = max(0, min(h, x + dx))
+            ny = max(0, min(w, y + dy))
 
             if (nx, ny) in self.obstacles:
                 blocked += 1

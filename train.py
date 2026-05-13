@@ -48,7 +48,7 @@ def evaluate(agent, n=10):
 
 
     for ev in range(n):
-        env = CabbageEnv()
+        env = CabbageEnv(MAP_H, MAP_W)
         env.reset()
         h, w = env.grid.shape
 
