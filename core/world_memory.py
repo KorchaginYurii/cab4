@@ -20,6 +20,7 @@ class WorldMemory:
         self.visited = np.zeros(grid_shape, dtype=np.float32)
         self.cleaned = np.zeros(grid_shape, dtype=np.float32)
         self.seen = np.zeros(grid_shape, dtype=np.float32)
+        self.dynamic_seen = np.zeros(grid_shape, dtype=np.float32)
 
     def observe_full(self, env):
         """
@@ -52,6 +53,12 @@ class WorldMemory:
 
         self.map[env.start_pos] = BASE
         self.visited[env.pos] += 1
+
+        self.dynamic_seen *= 0.90
+
+        if hasattr(env, "dynamic_obstacles"):
+            for x, y in env.dynamic_obstacles.positions():
+                self.dynamic_seen[x, y] = 1.0
 
     def mark_cleaned(self, pos):
         x, y = pos
@@ -167,3 +174,10 @@ class WorldMemory:
             new.visit_count = self.visit_count.copy()
 
         return new
+
+    def dynamic_risk(self, pos):
+        if not hasattr(self, "dynamic_seen"):
+            return 0.0
+
+        x, y = pos
+        return float(self.dynamic_seen[x, y])

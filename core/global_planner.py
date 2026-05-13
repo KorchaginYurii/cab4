@@ -181,6 +181,7 @@ class AStarPlanner:
                     neighbor_pos,
                     unknown_policy=unknown_policy
                 )
+
                 dynamic_cost = self.dynamic_obstacle_penalty(
                     env,
                     neighbor_pos
@@ -188,12 +189,17 @@ class AStarPlanner:
 
                 prediction_cost = self.dynamic_prediction_penalty(env, neighbor_pos)
 
+                memory_dynamic_cost = 0.0
+                if memory is not None:
+                    memory_dynamic_cost = memory.dynamic_risk(neighbor_pos) * 1.0
+
                 step_cost = (
                         move_cost
                         + rotate_cost
                         + unknown_cost
                         + dynamic_cost
                         + prediction_cost
+                        + memory_dynamic_cost
                 )
 
                 neighbor_state = (nx, ny, target_heading)
