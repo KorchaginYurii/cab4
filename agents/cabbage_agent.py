@@ -6,7 +6,7 @@ from core.network import Net
 from core.mcts import MCTS
 from core.mcts import extract_rollout
 
-from core.config import DEVICE, ACTIONS, VISION_SIZE, GRID_SIZE
+from core.config import DEVICE, ACTIONS, VISION_SIZE
 
 class CabbageAgent:
     def __init__(self):
@@ -29,6 +29,7 @@ class CabbageAgent:
 
     def get_state(self, env):
         half = VISION_SIZE // 2
+        h, w = env.grid.shape
 
         x, y = env.pos
 
@@ -81,8 +82,8 @@ class CabbageAgent:
             dists = np.abs(cabbages_global - np.array([x, y])).sum(axis=1)
             nearest = cabbages_global[np.argmin(dists)]
 
-            dx = (nearest[0] - x) / GRID_SIZE
-            dy = (nearest[1] - y) / GRID_SIZE
+            dx = (nearest[0] - x) / h
+            dy = (nearest[1] - y) / w
         else:
             dx, dy = 0.0, 0.0
 
@@ -97,8 +98,8 @@ class CabbageAgent:
 
         # каналы стартовой позиции
         sx, sy = env.start_pos
-        dx_home = np.full_like(window, (sx - (x - half)) / GRID_SIZE)
-        dy_home = np.full_like(window, (sy - (y - half)) / GRID_SIZE)
+        dx_home = np.full_like(window, (sx - (x - half)) / h)
+        dy_home = np.full_like(window, (sy - (y - half)) / w)
 
         #🔥 ФАЗЫ
 

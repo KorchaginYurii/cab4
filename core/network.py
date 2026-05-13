@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from core.config import DEVICE, ACTIONS, VISION_SIZE, GRID_SIZE, STATE_CHANNELS
+from core.config import DEVICE, ACTIONS, VISION_SIZE, STATE_CHANNELS
 
 class Net(nn.Module):
     def __init__(self):

@@ -1,14 +1,14 @@
 import numpy as np
 import random
 from collections import deque
-from core.config import GRID_SIZE, ACTIONS
+from core.config import ACTIONS
 from core.energy import EnergySystem
 from core.config import DIRECTIONS, MOVE_COST, TURN_COST, CUT_COST
 from core.dynamic_obstacles import DynamicObstacleManager
 import copy
 
 class CabbageEnv:
-    def __init__(self):
+    def __init__(self, height=10, width=10):
         self.flood_cache = {}
         self.max_steps = 200  # дефолт (любое безопасное значение)
         self.obstacle_ratio = 0.0
@@ -17,10 +17,15 @@ class CabbageEnv:
         self.heading = 0  # 0=UP, 1=RIGHT, 2=DOWN, 3=LEFT
         self.knife_on = False
         self.dynamic_obstacles = DynamicObstacleManager(count=2, move_prob=0.3)
+        self.height = height
+        self.width = width
 
     def reset(self, obs_min=0.05, obs_max=0.30, cab_min=0.30, cab_max=0.70):
         self.steps = 0
-        total = GRID_SIZE * GRID_SIZE
+
+
+        total = self.height * self.width
+
         self.obstacle_ratio = random.uniform(obs_min, obs_max)
         self.cabbage_ratio = random.uniform(cab_min, cab_max)
         obstacle_ratio = self.obstacle_ratio
@@ -34,17 +39,18 @@ class CabbageEnv:
         self.allow_start_access = False
 
         # ===== пустая карта =====
-        self.grid = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.int8)
+        self.grid = np.zeros((self.height, self.width), dtype=np.int8)
+        h, w = self.grid.shape
 
         # ===== старт (сначала!) =====
-        x = random.randint(0, GRID_SIZE - 1)
-        y = random.randint(0, GRID_SIZE - 1)
+        x = random.randint(0, h - 1)
+        y = random.randint(0, w - 1)
         self.pos = (x, y)
         self.start_pos = self.pos
 
         # ===== препятствия =====
         self.obstacles = set()
-        free_cells = [(i, j) for i in range(GRID_SIZE) for j in range(GRID_SIZE)]
+        free_cells = [(i, j) for i in range(h) for j in range(w)]
         free_cells.remove(self.pos)
         self.dynamic_obstacles.reset(self)
 
@@ -97,12 +103,12 @@ class CabbageEnv:
         # ===== расчет MAX_STEP от количества (плотности) капусты
         num_cabbages = np.sum(self.grid == 1)
         num_cabbages = min(num_cabbages, len(reachable) - 1)
-        density = num_cabbages / (GRID_SIZE * GRID_SIZE)
+        density = num_cabbages / (h * w)
 
         base = num_cabbages * 4.0
         complexity = np.mean(self.flood_map)
 
-        self.max_steps = int(base + complexity * 10 + GRID_SIZE)
+        self.max_steps = int(base + complexity * 10 + max(h,w))
 
         sx, sy = self.start_pos
         self.grid[sx][sy] = 0
@@ -269,7 +275,8 @@ class CabbageEnv:
 
         # ===== done =====
         collect_limit = self.max_steps
-        return_limit = GRID_SIZE * 2
+        h, w = self.grid.shape
+        return_limit = max(h,w) * 2
 
         done = ((all_collected and at_start) or
                 (self.steps >= collect_limit + return_limit)
@@ -374,8 +381,8 @@ class CabbageEnv:
 
     def flood_fill_penalty(self, pos):
         area = self.flood_fill_area(pos)
-
-        norm = area / (GRID_SIZE * GRID_SIZE)
+        h, w = self.grid.shape
+        norm = area / (h * w)
 
         # 🔥 маленькая область = плохо
         if norm < 0.2:
@@ -460,6 +467,7 @@ class CabbageEnv:
     def _flood_fill_from_start(self):
         visited = set()
         stack = [self.pos]
+        h, w = self.grid.shape
 
         while stack:
             x, y = stack.pop()
@@ -471,7 +479,7 @@ class CabbageEnv:
             for dx, dy in ACTIONS:
                 nx, ny = x + dx, y + dy
 
-                if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+                if 0 <= nx < h and 0 <= ny < w:
                     if self.grid[nx][ny] != -1:
                         stack.append((nx, ny))
 
@@ -500,7 +508,7 @@ class CabbageEnv:
     def reachable_without_start(self):
         visited = set()
         stack = [self.pos]
-
+        h, w = self.grid.shape
         while stack:
             x, y = stack.pop()
 
@@ -512,7 +520,7 @@ class CabbageEnv:
             for dx, dy in ACTIONS:
                 nx, ny = x + dx, y + dy
 
-                if not (0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE):
+                if not (0 <= nx < h and 0 <= ny < w):
                     continue
 
                 if (nx, ny) in self.obstacles:

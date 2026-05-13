@@ -13,7 +13,7 @@ from agents.cabbage_agent import CabbageAgent
 from agents.hybrid_agent import HybridAgent
 from env.cabbage_env import CabbageEnv
 
-from core.config import EPISODES, BATCH_SIZE, GAMMA, GRID_SIZE
+from core.config import EPISODES, BATCH_SIZE, GAMMA, MAP_H, MAP_W
 from core.checkpoint import CheckpointManager
 from core.metrics_logger import MetricsLogger
 
@@ -34,8 +34,8 @@ eval_score = -1
 
 elite_memory = deque(maxlen=10000)
 
-MODE = "resume"
-#MODE = "pretrain"
+#MODE = "resume"
+MODE = "pretrain"
 # MODE = "scratch"
 
 
@@ -46,12 +46,14 @@ def evaluate(agent, n=10):
     scores = []
     success = 0
 
+
     for ev in range(n):
         env = CabbageEnv()
         env.reset()
+        h, w = env.grid.shape
 
         total_reward = 0.0
-        episode_limit = env.max_steps + GRID_SIZE * 2
+        episode_limit = env.max_steps + max(h,w) * 2
 
         for st in range(episode_limit):
             a, _ = agent.act(env, temp=0)
@@ -98,7 +100,6 @@ def evaluate(agent, n=10):
         "success_rate": success / n
     }
 
-
 # =====================================================
 # PARTIAL LOAD
 # =====================================================
@@ -138,7 +139,6 @@ def load_pretrained_partial(agent, path):
 
     print(f"✅ Loaded {len(filtered)} layers partial")
 
-
 def find_best_model1(folder="checkpoints"):
     best_score = -1e9
     best_path = None
@@ -160,7 +160,6 @@ def find_best_model1(folder="checkpoints"):
 
     return best_path
 
-
 # =====================================================
 # INIT
 # =====================================================
@@ -170,7 +169,7 @@ ckpt = CheckpointManager(
 )
 
 agent = CabbageAgent()
-#agent = HybridAgent()
+
 logger = MetricsLogger()
 
 if MODE == "resume":
@@ -198,12 +197,15 @@ else:
 # =====================================================
 # MAIN LOOP
 # =====================================================
+
 for ep in range(start_ep, EPISODES):
 
     # =================================================
     # ENV
     # =================================================
-    env = CabbageEnv()
+    env = CabbageEnv(MAP_H, MAP_W)
+    h = env.height
+    w = env.width
 
     if ep < 100:
         env.reset(obs_min=0.00, obs_max=0.05, cab_min=0.25, cab_max=0.35)
@@ -224,7 +226,8 @@ for ep in range(start_ep, EPISODES):
     done = False
     debug = {}
 
-    episode_limit = env.max_steps + GRID_SIZE * 2
+
+    episode_limit = env.max_steps + max(h,w) * 2
 
     # =================================================
     # MCTS SCHEDULE
@@ -236,7 +239,7 @@ for ep in range(start_ep, EPISODES):
     else:
         sims = 150
 
-    density = np.sum(env.grid == 1) / (GRID_SIZE * GRID_SIZE)
+    density = np.sum(env.grid == 1) / (h * w)
     scale = 1 + (1 - density)
 
     if density < 0.2:

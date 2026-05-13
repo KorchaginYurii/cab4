@@ -8,7 +8,7 @@ from core.sector_coverage import SectorCoveragePlanner
 from core.energy_predictor import EnergyPredictor
 from core.world_memory import WorldMemory
 from core.frontier_manager import FrontierManager
-from core.config import ACTIONS, GRID_SIZE
+from core.config import ACTIONS
 from core.team_blackboard import TeamBlackboard
 
 class HybridAgent:
@@ -576,10 +576,11 @@ class HybridAgent:
         )
 
         x, y = env.pos
+        h, w = env.grid.shape
 
         for a, (dx, dy) in enumerate(ACTIONS):
-            nx = max(0, min(GRID_SIZE - 1, x + dx))
-            ny = max(0, min(GRID_SIZE - 1, y + dy))
+            nx = max(0, min(h - 1, x + dx))
+            ny = max(0, min(w - 1, y + dy))
             np_ = (nx, ny)
 
             if np_ in env.obstacles:

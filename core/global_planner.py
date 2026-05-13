@@ -4,7 +4,6 @@ from core.world_memory import UNKNOWN, OBSTACLE
 from core.config import (
     ACTIONS,
     DIRECTIONS,
-    GRID_SIZE,
     MOVE_COST,
     TURN_COST,
     UNKNOWN_CELL_COST,
@@ -37,10 +36,10 @@ class AStarPlanner:
                 return self.reconstruct_path(came_from, current)
 
             x, y = current
-
+            h, w = env.grid.shape
             for dx, dy in ACTIONS:
-                nx = max(0, min(GRID_SIZE - 1, x + dx))
-                ny = max(0, min(GRID_SIZE - 1, y + dy))
+                nx = max(0, min(h - 1, x + dx))
+                ny = max(0, min(w - 1, y + dy))
 
                 neighbor = (nx, ny)
 

@@ -1,5 +1,5 @@
 import random
-from core.config import ACTIONS, GRID_SIZE
+from core.config import ACTIONS
 
 
 class DynamicObstacle:
@@ -15,11 +15,11 @@ class DynamicObstacleManager:
 
     def reset(self, env):
         self.obstacles = []
-
+        h, w = env.grid.shape
         free = [
             (i, j)
-            for i in range(GRID_SIZE)
-            for j in range(GRID_SIZE)
+            for i in range(h)
+            for j in range(w)
             if env.grid[i][j] == 0
             and (i, j) != env.pos
             and (i, j) != env.start_pos
@@ -41,11 +41,12 @@ class DynamicObstacleManager:
                 continue
 
             x, y = obj.pos
+            h, w = env.grid.shape
             random.shuffle(ACTIONS)
 
             for dx, dy in ACTIONS:
-                nx = max(0, min(GRID_SIZE - 1, x + dx))
-                ny = max(0, min(GRID_SIZE - 1, y + dy))
+                nx = max(0, min(h - 1, x + dx))
+                ny = max(0, min(w - 1, y + dy))
                 np = (nx, ny)
 
                 if np in env.obstacles:

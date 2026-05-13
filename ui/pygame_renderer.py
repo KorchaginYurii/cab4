@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from core.config import GRID_SIZE
+from core.config import MAP_H, MAP_W
 #from agents.cabbage_agent import CabbageAgent
 #agent = CabbageAgent()
 import torch
@@ -18,10 +18,17 @@ BLUE = (80,80,255)
 class Renderer:
     def __init__(self):
         pygame.init()
-        self.size = GRID_SIZE * CELL
-        self.screen = pygame.display.set_mode((self.size + 200, self.size + 200))
-        #self.screen = pygame.display.set_mode((400,400))
-        self.overlay = pygame.Surface((self.size, self.size + 80), pygame.SRCALPHA)
+        self.map_h = MAP_H * CELL
+        self.map_w = MAP_W * CELL
+
+        self.screen = pygame.display.set_mode(
+            (self.map_w + 200, self.map_h + 200)
+        )
+
+        self.overlay = pygame.Surface(
+            (self.map_w, self.map_h + 80),
+            pygame.SRCALPHA
+        )
 
         self.show_path = True
         self.show_goal = True
@@ -315,7 +322,7 @@ class Renderer:
         # =====================================================
         if debug is not None:
 
-            y0 = self.size + 5
+            y0 = self.map_h + 5
 
             total = np.sum(env.initial_grid == 1)
             remaining = np.sum(env.grid == 1)
@@ -528,7 +535,7 @@ class Renderer:
         return (y * CELL + CELL // 2, x * CELL + CELL // 2)
 
     def draw_visited_heatmap(self, visited):
-        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        overlay = pygame.Surface((self.map_h, self.map_w), pygame.SRCALPHA)
 
         max_v = np.max(visited)
 
@@ -569,7 +576,7 @@ class Renderer:
         pygame.draw.rect(self.screen, color, (x, y, int(w * value), h))
 
     def draw_legend(self, y_start):
-        x = self.size + 10
+        x = self.map_w + 10
         y = y_start + 10  # небольшой отступ
 
         items = [
@@ -598,7 +605,7 @@ class Renderer:
             y += 20
 
     def draw_ui(self):
-        x = self.size + 10
+        x = self.map_w + 10
         y = 20
 
         for item in self.ui_items:
@@ -634,7 +641,7 @@ class Renderer:
         self.draw_text(f"{energy:.1f}/{max_energy:.1f}%", x + w + 8, y - 3)
 
     def draw_coverage_heatmap(self, visit_count):
-        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        overlay = pygame.Surface((self.map_h, self.map_w), pygame.SRCALPHA)
 
         max_v = np.max(visit_count)
 
@@ -680,7 +687,7 @@ class Renderer:
         self.screen.blit(overlay, (0, 0))
 
     def draw_turn_heatmap(self, turn_count):
-        overlay = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        overlay = pygame.Surface((self.map_h, self.map_w), pygame.SRCALPHA)
 
         max_v = np.max(turn_count)
 

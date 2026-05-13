@@ -1,7 +1,8 @@
 import torch
 
 # ===== ENV =====
-GRID_SIZE = 10
+MAP_H = 10
+MAP_W = 10
 VISION_SIZE = 7
 #MAX_STEPS = 200
 
