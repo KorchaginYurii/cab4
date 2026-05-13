@@ -93,14 +93,24 @@ MAP_W = 80
 вся логика
 env = CabbageEnv(MAP_H, MAP_W)
 h, w = env.grid.shape
-==================
-= adaptive renderer scaling
-==================
-
-
-
-
-
+=== adaptive renderer scaling
+========================
+=== Time-Aware =======
+==========================
+То есть учитывать:
+	не только "где obstacle"
+но и
+	"КУДА obstacle движется"
+Сейчас dynamic obstacle — это просто moving wall.
+Но можно сделать:
+	trajectory prediction
+И тогда агент начнёт:
+	не ждать блокировки а заранее обходить движущийся объект
+=== Dynamic Cost Map =
+Идея:
+	клетки рядом с dynamic obstacle	= дороже
+То есть A* будет:
+	предпочитать путь подальше а не вплотную к obstacle.
 
 
 
