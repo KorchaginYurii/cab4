@@ -10,6 +10,7 @@ from core.world_memory import WorldMemory
 from core.frontier_manager import FrontierManager
 from core.config import ACTIONS
 from core.team_blackboard import TeamBlackboard
+from core.tuning_config import runtime_config
 
 class HybridAgent:
     def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
@@ -32,7 +33,7 @@ class HybridAgent:
         self.sector_switches = 0
         self.memory = WorldMemory()
         self.frontiers = FrontierManager()
-        self.replan_interval = 8
+        self.replan_interval = runtime_config.get("REPLAN_INTERVAL", 8)
         self.replan_cooldown = 0
         self.prev_pos = None
 

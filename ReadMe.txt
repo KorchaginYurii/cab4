@@ -176,7 +176,34 @@ h, w = env.grid.shape
 	3. запускать агента
 	4. собирать метрики
 	5. сохранять CSV
-
+Что теперь становится возможным
+Настоящий research loop
+	изменил алгоритм
+		↓
+	benchmark_runner
+		↓
+	CSV
+		↓
+	сравнение
+		↓
+	оставил только улучшения
+################################################
+======= Auto-Tuning / Self-Optimization =======
+###############################################
+Например агент сам подбирает:
+	TURN_COST_WEIGHT
+	UNKNOWN_COST
+	dynamic penalties
+	replan interval
+	sector score weights
+и benchmark автоматически говорит:
+какие коэффициенты реально лучше
+Это уже переход от:
+	ручного тюнинга
+к:
+	automated system optimization
+	
+	
 
 
 

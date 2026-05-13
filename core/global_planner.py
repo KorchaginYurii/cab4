@@ -11,6 +11,7 @@ from core.config import (
     UNKNOWN_COST_ALLOW,
     UNKNOWN_COST_EXPLORE,
 )
+from core.tuning_config import runtime_config
 
 class AStarPlanner:
     def __init__(self):
@@ -174,7 +175,9 @@ class AStarPlanner:
                 target_heading = self.direction_to_heading(dx, dy, heading)
 
                 move_cost = MOVE_COST
-                rotate_cost = 0.3 * self.turn_cost(heading, target_heading)
+
+                turn_weight = runtime_config.get("TURN_COST_WEIGHT", 0.3)
+                rotate_cost = turn_weight * self.turn_cost(heading, target_heading)
 
                 unknown_cost = self.memory_cell_extra_cost(
                     memory,
@@ -245,12 +248,12 @@ class AStarPlanner:
             return 0.0
 
         if unknown_policy == "avoid":
-            return UNKNOWN_COST_AVOID
+            return runtime_config.get("UNKNOWN_COST_AVOID", 1.0)
 
         if unknown_policy == "explore":
-            return UNKNOWN_COST_EXPLORE
+            return runtime_config.get("UNKNOWN_COST_EXPLORE", 0.05)
 
-        return UNKNOWN_COST_ALLOW
+        return runtime_config.get("UNKNOWN_COST_ALLOW", 0.3)
 
     def dynamic_obstacle_penalty(self, env, pos):
         if not hasattr(env, "dynamic_obstacles"):
@@ -277,15 +280,15 @@ class AStarPlanner:
 
         # very dangerous
         elif min_dist == 1:
-            return 2.0
+            return runtime_config.get("DYNAMIC_NEAR_COST", 2.0)
 
         # nearby
         elif min_dist == 2:
-            return 0.5
+            return runtime_config.get("DYNAMIC_MID_COST", 0.5)
 
         # slight discomfort
         elif min_dist == 3:
-            return 0.1
+            return runtime_config.get("DYNAMIC_FAR_COST", 0.1)
 
         return 0.0
 

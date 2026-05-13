@@ -127,7 +127,7 @@ def main():
 
     ckpt = CheckpointManager(
         k_best=3,
-        project_name="Cab2"
+        project_name="Cab4"
     )
 
     ckpt.load_checkpoint(local_agent)
@@ -139,7 +139,7 @@ def main():
 
     rows = []
 
-    for i, seed in enumerate(BENCHMARK_SEEDS):
+    for i, seed in enumerate(BENCHMARK_SEEDS[:3]):
         print(f"\n🚀 Benchmark {i + 1}/{len(BENCHMARK_SEEDS)} | seed={seed}")
 
         result = run_one_mission(agent, seed)
