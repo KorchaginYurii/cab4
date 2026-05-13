@@ -36,8 +36,6 @@ class HybridAgent:
         self.replan_cooldown = 0
         self.prev_pos = None
 
-
-
     def reset(self):
 
         self.mode = "COLLECT"
@@ -269,33 +267,37 @@ class HybridAgent:
 
     def act(self, env, temp=0):
 
-        self.blackboard.update_robot(self.robot_id, env.pos)
         # =====================================================
-        # 1. UPDATE MEMORY
+        # 1. TEAM UPDATE
+        # =====================================================
+        self.blackboard.update_robot(
+            self.robot_id,
+            env.pos
+        )
+
+        # =====================================================
+        # 2. MEMORY UPDATE
         # =====================================================
         if self.memory.map is None:
             self.memory.reset(env.grid.shape)
 
-        # для partial observable режима
         self.memory.observe_local(env, radius=3)
-        # если нужен полный доступ:
-        # self.memory.observe_full(env)
 
-        # ===== TEAM MEMORY =====
+        # shared memory
         self.blackboard.update_shared_memory(self.memory)
         self.memory = self.blackboard.sync_memory(self.memory)
 
-        # синхронизация пути
+        # sync current path with actual position
         self.sync_path_with_position(env)
 
         # =====================================================
-        # 2. INIT REPLAN STATE
+        # 3. INIT INTERNAL STATE
         # =====================================================
         if not hasattr(self, "replan_cooldown"):
             self.replan_cooldown = 0
 
         if not hasattr(self, "replan_interval"):
-            self.replan_interval = 5
+            self.replan_interval = 8
 
         if not hasattr(self, "prev_pos"):
             self.prev_pos = None
@@ -307,12 +309,23 @@ class HybridAgent:
                 or (self.mode == "RETURN_FINISH" and remaining == 0)
         )
 
+        # =====================================================
+        # 4. RISK MODE
+        # =====================================================
+        risk_mode = self.compute_risk_mode(env)
 
+        if risk_mode == "CAREFUL":
+            current_replan_interval = 2
+
+        elif risk_mode == "SAFE_RETURN":
+            current_replan_interval = 1
+
+        else:
+            current_replan_interval = self.replan_interval
 
         # =====================================================
-        # 3. DECIDE IF REPLAN IS NEEDED
+        # 5. CHECK IF REPLAN NEEDED
         # =====================================================
-
         need_replan = False
 
         if self.goal is None:
@@ -330,28 +343,45 @@ class HybridAgent:
         if self.replan_cooldown <= 0:
             need_replan = True
 
-        # если цель уже достигнута
         if self.goal is not None and env.pos == self.goal:
             need_replan = True
 
+        # dynamic obstacle occupies goal
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        if self.goal in dynamic_positions:
+            self.goal = None
+            self.path = None
+            self.replan_cooldown = 0
+            need_replan = True
+
         # =====================================================
-        # 4. REPLAN ONLY IF NEEDED
+        # 6. REPLAN
         # =====================================================
         if need_replan:
+
             self.goal = self.choose_goal(env)
 
-            unknown_policy = "allow"
+            # unknown policy
+            if risk_mode == "SAFE_RETURN":
+                unknown_policy = "avoid"
 
-            if self.mode == "EXPLORE":
+            elif self.mode == "EXPLORE":
                 unknown_policy = "explore"
 
             elif self.mode in ["RETURN_CHARGE", "RETURN_FINISH"]:
                 unknown_policy = "avoid"
 
-            elif self.mode == "COLLECT":
+            else:
                 unknown_policy = "allow"
 
+            # build path
             if self.goal is not None:
+
                 self.path = self.planner.find_path_oriented(
                     env,
                     env.pos,
@@ -361,16 +391,17 @@ class HybridAgent:
                     robot_id=self.robot_id,
                     blackboard=self.blackboard
                 )
+
             else:
                 self.path = None
 
-            self.replan_cooldown = self.replan_interval
+            self.replan_cooldown = current_replan_interval
 
         else:
             self.replan_cooldown -= 1
 
         # =====================================================
-        # 5. ANTI BACK-AND-FORTH PROTECTION
+        # 7. ANTI BACKTRACK
         # =====================================================
         if (
                 self.prev_pos is not None
@@ -379,7 +410,7 @@ class HybridAgent:
                 and self.path[1] == self.prev_pos
                 and not self.path_is_blocked(env)
         ):
-            # путь ведёт сразу назад без необходимости — принудительный replan
+
             self.path = None
             self.replan_cooldown = 0
 
@@ -397,15 +428,21 @@ class HybridAgent:
                 )
 
         # =====================================================
-        # 6. ACTION FROM PATH
+        # 8. ACTION SELECTION
         # =====================================================
         if self.path is not None and len(self.path) >= 2:
-            action = self.action_from_path(env, self.path)
+
+            action = self.action_from_path(
+                env,
+                self.path
+            )
+
         else:
+
             action = self.safe_detour_action(env)
 
         # =====================================================
-        # 7. SECTOR SWITCH METRICS
+        # 9. METRICS
         # =====================================================
         sector = self.sectors.current_sector
 
@@ -419,56 +456,97 @@ class HybridAgent:
             self.sector_switches += 1
             self.last_sector = sector
 
-        # =====================================================
-        # 8. METRICS
-        # =====================================================
         total = np.sum(env.initial_grid == 1)
         remaining = np.sum(env.grid == 1)
         collected = total - remaining
 
         energy_used = getattr(env, "energy_used", 0.0)
-        energy_per_cabbage = energy_used / max(1, collected)
+
+        energy_per_cabbage = (
+                energy_used / max(1, collected)
+        )
 
         if hasattr(env, "visit_count"):
-            overlap_cells = int(np.sum(env.visit_count > 1))
-            visited_cells = int(np.sum(env.visit_count > 0))
-            overlap_rate = overlap_cells / max(1, visited_cells)
+
+            overlap_cells = int(
+                np.sum(env.visit_count > 1)
+            )
+
+            visited_cells = int(
+                np.sum(env.visit_count > 0)
+            )
+
+            overlap_rate = (
+                    overlap_cells / max(1, visited_cells)
+            )
+
         else:
             overlap_cells = 0
             overlap_rate = 0.0
 
         total_turns = getattr(env, "total_turns", 0)
 
-        required_energy = getattr(self, "last_required_energy", 0.0)
-        energy_margin = env.energy_system.energy - required_energy
+        required_energy = getattr(
+            self,
+            "last_required_energy",
+            0.0
+        )
+
+        energy_margin = (
+                env.energy_system.energy
+                - required_energy
+        )
 
         frontiers = self.memory.frontier_cells()
 
         # =====================================================
-        # 9. DEBUG
+        # 10. DEBUG
         # =====================================================
         debug = {
+
+            # state
             "mode": self.mode,
+            "risk_mode": risk_mode,
+
+            # navigation
             "goal": self.goal,
             "path": self.path,
+            "need_replan": need_replan,
+            "replan_cooldown": self.replan_cooldown,
 
+            # sectors
             "sector": self.sectors.current_sector,
             "sector_h": self.sectors.sector_h,
             "sector_w": self.sectors.sector_w,
             "sector_switches": self.sector_switches,
 
-            "coverage_target": self.goal,
-
+            # frontiers
             "frontiers": frontiers,
             "frontier_count": len(frontiers),
-            "frontier_clusters": getattr(self.frontiers, "frontier_clusters", []),
-            "frontier_target": getattr(self.frontiers, "selected_frontier", None),
 
+            "frontier_clusters": getattr(
+                self.frontiers,
+                "frontier_clusters",
+                []
+            ),
+
+            "frontier_target": getattr(
+                self.frontiers,
+                "selected_frontier",
+                None
+            ),
+
+            # memory
             "memory_map": self.memory.map.copy(),
             "memory_seen": self.memory.seen.copy(),
-            "memory_coverage": self.memory.coverage_rate(),
-            "memory_overlap": self.memory.visited_overlap_rate(),
 
+            "memory_coverage":
+                self.memory.coverage_rate(),
+
+            "memory_overlap":
+                self.memory.visited_overlap_rate(),
+
+            # energy
             "energy": env.energy_system.energy,
             "max_energy": env.energy_system.max_energy,
             "energy_used": energy_used,
@@ -476,31 +554,32 @@ class HybridAgent:
             "required_energy": required_energy,
             "energy_margin": energy_margin,
 
+            # robot
             "knife_on": env.knife_on,
             "heading": env.heading,
 
+            # stats
             "total_turns": total_turns,
             "overlap_cells": overlap_cells,
             "overlap_rate": overlap_rate,
 
-            "replan_cooldown": self.replan_cooldown,
-            "need_replan": need_replan,
-
+            # multi-agent
             "robot_id": self.robot_id,
-            "claimed_sectors": dict(self.blackboard.claimed_sectors),
 
-            "robot_id": self.robot_id,
-            "claimed_sectors": dict(self.blackboard.claimed_sectors),
+            "claimed_sectors":
+                dict(self.blackboard.claimed_sectors),
 
-            "robot_positions": dict(self.blackboard.robot_positions)
+            "robot_positions":
+                dict(self.blackboard.robot_positions),
         }
 
         # =====================================================
-        # 10. UPDATE PREV POS
+        # 11. SAVE POSITION
         # =====================================================
         self.prev_pos = env.pos
 
         return action, debug
+
     def estimate_path_cost(self, env, path, start_heading=None):
         if path is None or len(path) < 2:
             return 0.0
@@ -593,3 +672,28 @@ class HybridAgent:
             return a
 
         return 0
+
+    def compute_risk_mode(self, env):
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        x, y = env.pos
+
+        min_dist = 999
+
+        for ox, oy in dynamic_positions:
+            d = abs(x - ox) + abs(y - oy)
+            min_dist = min(min_dist, d)
+
+        energy_ratio = env.energy_system.energy / env.energy_system.max_energy
+
+        if self.mode in ["RETURN_CHARGE", "RETURN_FINISH"] and energy_ratio < 0.3:
+            return "SAFE_RETURN"
+
+        if min_dist <= 2:
+            return "CAREFUL"
+
+        return "NORMAL"

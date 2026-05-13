@@ -541,6 +541,22 @@ class Renderer:
                 (220, 160, 255)
             )
 
+            risk_mode = debug.get("risk_mode", "NORMAL")
+
+            y0 += 22
+            risk_color = (255, 255, 255)
+
+            if risk_mode == "CAREFUL":
+                risk_color = (255, 180, 80)
+            elif risk_mode == "SAFE_RETURN":
+                risk_color = (255, 80, 80)
+
+            self.draw_text(
+                f"RISK: {risk_mode}",
+                10,
+                y0,
+                risk_color
+            )
 
         pygame.display.flip()
 
