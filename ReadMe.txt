@@ -94,6 +94,7 @@ MAP_W = 80
 env = CabbageEnv(MAP_H, MAP_W)
 h, w = env.grid.shape
 === adaptive renderer scaling
+
 ========================
 === Time-Aware =======
 ==========================
@@ -106,13 +107,17 @@ h, w = env.grid.shape
 	trajectory prediction
 И тогда агент начнёт:
 	не ждать блокировки а заранее обходить движущийся объект
+
 === Dynamic Cost Map =
 Идея:
 	клетки рядом с dynamic obstacle	= дороже
 То есть A* будет:
 	предпочитать путь подальше а не вплотную к obstacle.
 
-
+=== prediction-aware dynamic obstacle =
+Сейчас агент держится подальше от текущей позиции препятствия.
+Теперь сделаем умнее:
+	не только “где obstacle сейчас”, а “где он, вероятно, будет через 1–3 шага”
 
 
 

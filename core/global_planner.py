@@ -186,11 +186,14 @@ class AStarPlanner:
                     neighbor_pos
                 )
 
+                prediction_cost = self.dynamic_prediction_penalty(env, neighbor_pos)
+
                 step_cost = (
                         move_cost
                         + rotate_cost
                         + unknown_cost
                         + dynamic_cost
+                        + prediction_cost
                 )
 
                 neighbor_state = (nx, ny, target_heading)
@@ -277,5 +280,16 @@ class AStarPlanner:
         # slight discomfort
         elif min_dist == 3:
             return 0.1
+
+        return 0.0
+
+    def dynamic_prediction_penalty(self, env, pos):
+        if not hasattr(env, "dynamic_obstacles"):
+            return 0.0
+
+        predicted = env.dynamic_obstacles.predicted_positions(horizon=3)
+
+        if pos in predicted:
+            return 1.5
 
         return 0.0

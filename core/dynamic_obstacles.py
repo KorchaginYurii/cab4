@@ -5,7 +5,7 @@ from core.config import ACTIONS
 class DynamicObstacle:
     def __init__(self, pos):
         self.pos = pos
-
+        self.prev_pos = pos
 
 class DynamicObstacleManager:
     def __init__(self, count=2, move_prob=0.3):
@@ -40,8 +40,12 @@ class DynamicObstacleManager:
             if random.random() > self.move_prob:
                 continue
 
+            # запоминаем прошлую позицию перед движением
+            obj.prev_pos = obj.pos
+
             x, y = obj.pos
             h, w = env.grid.shape
+
             random.shuffle(ACTIONS)
 
             for dx, dy in ACTIONS:
@@ -65,3 +69,18 @@ class DynamicObstacleManager:
                 obj.pos = np
                 occupied.add(np)
                 break
+
+    def predicted_positions(self, horizon=3):
+        preds = set()
+
+        for obj in self.obstacles:
+            x, y = obj.pos
+            px, py = obj.prev_pos
+
+            vx = x - px
+            vy = y - py
+
+            for t in range(1, horizon + 1):
+                preds.add((x + vx * t, y + vy * t))
+
+        return preds
