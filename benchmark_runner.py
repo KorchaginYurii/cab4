@@ -151,7 +151,8 @@ def main():
             f"{result['fail_reason']} | "
             f"cabbage={result['collected']}/{result['total_cabbages']} | "
             f"energy={result['energy_used']:.1f} | "
-            f"steps={result['steps']}/{result['limit']}"
+            f"steps={result['steps']}/{result['limit']} | "
+            f"base={result['recharge_count']} "
         )
 
     save_results(rows)
