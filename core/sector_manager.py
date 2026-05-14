@@ -8,7 +8,6 @@ class SectorManager:
         self.sector_w = sector_w
         self.current_sector = None
 
-
     def get_sector_id(self, pos):
         x, y = pos
         return (x // self.sector_h, y // self.sector_w)
@@ -181,3 +180,14 @@ class SectorManager:
         self.last_sector_required_energy = best_required
 
         return best_sector
+
+    def all_sector_ids(self, memory):
+        h, w = memory.map.shape
+
+        ids = []
+
+        for x in range(0, h, self.sector_h):
+            for y in range(0, w, self.sector_w):
+                ids.append((x // self.sector_h, y // self.sector_w))
+
+        return ids

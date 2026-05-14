@@ -11,6 +11,7 @@ from core.frontier_manager import FrontierManager
 from core.config import ACTIONS
 from core.team_blackboard import TeamBlackboard
 from core.tuning_config import runtime_config
+from core.mission_planner import MissionPlanner
 
 class HybridAgent:
     def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
@@ -36,6 +37,7 @@ class HybridAgent:
         self.replan_interval = runtime_config.get("REPLAN_INTERVAL", 8)
         self.replan_cooldown = 0
         self.prev_pos = None
+        self.mission = MissionPlanner()
 
     def reset(self):
 
@@ -104,13 +106,10 @@ class HybridAgent:
         # =====================================================
         # 4. ВЫБИРАЕМ СЕКТОР
         # =====================================================
-        sector = self.sectors.choose_sector_energy_aware(
+        sector = self.mission.current_sector(
             env,
             self.memory,
-            self.planner,
-            self.energy_predictor,
-            robot_id=self.robot_id,
-            blackboard=self.blackboard
+            self.sectors
         )
 
         if sector is not None:
