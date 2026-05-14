@@ -272,8 +272,13 @@ h, w = env.grid.shape
 	длинные переезды
 	лишние sector switches
 
-
-
+=== Opportunistic Return Planning ===
+Идея:
+	если рядом ещё выгодный сектор и энергии хватит
+	→ дочистить его перед возвратом
+Это уже даст почти production-level mission behavior
+Потому что robot начнёт:
+	оптимизировать ВСЮ миссию а не только текущий сектор
 
 
 

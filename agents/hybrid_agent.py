@@ -12,6 +12,11 @@ from core.config import ACTIONS
 from core.team_blackboard import TeamBlackboard
 from core.tuning_config import runtime_config
 from core.mission_planner import MissionPlanner
+from core.config import (
+    OPPORTUNISTIC_RETURN_MARGIN,
+    OPPORTUNISTIC_MAX_EXTRA_COST,
+    OPPORTUNISTIC_MIN_CABBAGES,
+)
 
 class HybridAgent:
     def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
@@ -133,8 +138,15 @@ class HybridAgent:
             self.last_required_energy = required_energy
 
             if not ok_energy:
-                self.mode = "RETURN_CHARGE"
-                return env.start_pos
+                opportunistic_sector = self.find_opportunistic_sector(env, sector)
+
+                if opportunistic_sector is not None:
+                    self.mode = "COLLECT"
+                    sector = opportunistic_sector
+                    self.sectors.current_sector = sector
+                else:
+                    self.mode = "RETURN_CHARGE"
+                    return env.start_pos
 
             cabbage = self.coverage.get_next_target_hybrid(
                 self.memory,
@@ -500,6 +512,7 @@ class HybridAgent:
 
         frontiers = self.memory.frontier_cells()
 
+
         # =====================================================
         # 10. DEBUG
         # =====================================================
@@ -572,6 +585,8 @@ class HybridAgent:
 
             "robot_positions":
                 dict(self.blackboard.robot_positions),
+            "opportunistic_sector":
+                getattr(self, "last_opportunistic_sector", None),
         }
 
         # =====================================================
@@ -698,3 +713,67 @@ class HybridAgent:
             return "CAREFUL"
 
         return "NORMAL"
+
+    def find_opportunistic_sector(self, env, current_sector):
+        energy = env.energy_system.energy
+        self.last_opportunistic_sector = None
+        best_sector = None
+        best_score = -1e9
+
+        for sector_id in self.sectors.all_sector_ids(self.memory):
+            if sector_id == current_sector:
+                continue
+
+            cab_count = self.sectors.sector_cabbages(self.memory, sector_id)
+
+            if cab_count < OPPORTUNISTIC_MIN_CABBAGES:
+                continue
+
+            center = self.sectors.sector_center(sector_id, self.memory.map.shape)
+
+            path_to = self.planner.find_path_oriented(
+                env,
+                env.pos,
+                center,
+                memory=self.memory,
+                unknown_policy="allow",
+                robot_id=self.robot_id,
+                blackboard=self.blackboard
+            )
+
+            if path_to is None:
+                continue
+
+            path_home = self.planner.find_path_oriented(
+                env,
+                center,
+                env.start_pos,
+                memory=self.memory,
+                unknown_policy="avoid",
+                robot_id=self.robot_id,
+                blackboard=self.blackboard
+            )
+
+            if path_home is None:
+                continue
+
+            to_cost = self.estimate_path_cost(env, path_to)
+            home_cost = self.estimate_path_cost(env, path_home)
+
+            extra_cost = to_cost + home_cost
+
+            if extra_cost > OPPORTUNISTIC_MAX_EXTRA_COST:
+                continue
+
+            if energy - extra_cost < OPPORTUNISTIC_RETURN_MARGIN:
+                continue
+
+            score = cab_count * 10 - extra_cost
+
+            if score > best_score:
+                best_score = score
+                best_sector = sector_id
+
+        self.last_opportunistic_sector = best_sector
+
+        return best_sector
