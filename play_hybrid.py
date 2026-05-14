@@ -30,9 +30,7 @@ start_ep, best = ckpt.load_checkpoint(local_agent)
 # HYBRID WRAPPER
 # ======================================
 agent = HybridAgent(local_agent=local_agent)
-
-
-#agent = HybridAgent(max_energy=100)
+#agent = HybridAgent()
 agent.reset()
 
 renderer = Renderer()
