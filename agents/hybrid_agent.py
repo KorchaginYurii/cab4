@@ -138,15 +138,8 @@ class HybridAgent:
             self.last_required_energy = required_energy
 
             if not ok_energy:
-                opportunistic_sector = self.find_opportunistic_sector(env, sector)
-
-                if opportunistic_sector is not None:
-                    self.mode = "COLLECT"
-                    sector = opportunistic_sector
-                    self.sectors.current_sector = sector
-                else:
-                    self.mode = "RETURN_CHARGE"
-                    return env.start_pos
+                self.mode = "RETURN_CHARGE"
+                return env.start_pos
 
             cabbage = self.coverage.get_next_target_hybrid(
                 self.memory,
@@ -260,6 +253,7 @@ class HybridAgent:
         # 10. ВСЁ ОК → СОБИРАЕМ
         # =====================================================
         self.mode = "COLLECT"
+
         return cabbage
 
     def action_from_path(self, env, path):
@@ -762,13 +756,21 @@ class HybridAgent:
 
             extra_cost = to_cost + home_cost
 
+            score = cab_count * 10 - extra_cost
+            print(
+                "OPP",
+                "sector", sector_id,
+                "cab", cab_count,
+                "extra", round(extra_cost, 1),
+                "energy", round(energy, 1),
+                "score", round(score, 1)
+            )
             if extra_cost > OPPORTUNISTIC_MAX_EXTRA_COST:
                 continue
 
             if energy - extra_cost < OPPORTUNISTIC_RETURN_MARGIN:
                 continue
 
-            score = cab_count * 10 - extra_cost
 
             if score > best_score:
                 best_score = score
