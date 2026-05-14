@@ -137,12 +137,11 @@ class HybridAgent:
                 self.mode = "RETURN_CHARGE"
                 return env.start_pos
 
-            cabbage = self.coverage.get_next_target_directional(
+            cabbage = self.coverage.get_next_target_sweep_line(
                 self.memory,
                 env,
                 self.sectors,
-                sector,
-                prev_pos=getattr(self, "prev_pos", None)
+                sector
             )
 
         else:

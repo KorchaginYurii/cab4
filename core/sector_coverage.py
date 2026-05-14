@@ -7,10 +7,15 @@ class SectorCoveragePlanner:
         self.cached_sector = None
         self.cached_targets = []
         self.target_index = 0
+        self.cached_lines = []
+        self.line_index = 0
 
     def reset(self):
         self.cached_sector = None
         self.cached_targets = []
+        self.target_index = 0
+        self.cached_lines = []
+        self.line_index = 0
         self.target_index = 0
 
     def build_targets(self, memory, sector_manager, sector_id):
@@ -148,3 +153,80 @@ class SectorCoveragePlanner:
 
         return best
 
+    def build_sweep_lines(self, memory, sector_manager, sector_id):
+        x1, x2, y1, y2 = sector_manager.get_sector_bounds(
+            sector_id,
+            memory.map.shape
+        )
+
+        lines = []
+
+        for x in range(x1, x2):
+            row = []
+
+            cols = range(y1, y2)
+
+            if (x - x1) % 2 == 1:
+                cols = reversed(list(cols))
+
+            for y in cols:
+                if memory.map[x, y] == 1:
+                    row.append((x, y))
+
+            if len(row) > 0:
+                lines.append(row)
+
+        return lines
+
+    def get_next_target_sweep_line(
+            self,
+            memory,
+            env,
+            sector_manager,
+            sector_id
+    ):
+        if sector_id is None:
+            return None
+
+        if sector_id != self.cached_sector:
+            self.cached_sector = sector_id
+            self.cached_lines = self.build_sweep_lines(
+                memory,
+                sector_manager,
+                sector_id
+            )
+            self.line_index = 0
+            self.target_index = 0
+
+        if not hasattr(self, "cached_lines"):
+            self.cached_lines = []
+
+        while self.line_index < len(self.cached_lines):
+            line = self.cached_lines[self.line_index]
+
+            while self.target_index < len(line):
+                x, y = line[self.target_index]
+
+                if memory.map[x, y] == 1:
+                    return (x, y)
+
+                self.target_index += 1
+
+            self.line_index += 1
+            self.target_index = 0
+
+        self.cached_lines = self.build_sweep_lines(
+            memory,
+            sector_manager,
+            sector_id
+        )
+        self.line_index = 0
+        self.target_index = 0
+
+        if len(self.cached_lines) == 0:
+            return None
+
+        if len(self.cached_lines[0]) == 0:
+            return None
+
+        return self.cached_lines[0][0]
