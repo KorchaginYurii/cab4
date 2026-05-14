@@ -228,6 +228,7 @@ h, w = env.grid.shape
 ==== Trajectory Smoothing ===
 	не просто shortest path
 	а smoother path
+
 = Turn-Aware A*
 Сейчас:
 	A* минимизирует стоимость
@@ -239,6 +240,7 @@ h, w = env.grid.shape
 		zig-zag
 		energy loss
 		overlap
+
 === Sweep-Line Coverage Planner ===
 Идея:
 	не "выбери следующую капусту"
@@ -246,5 +248,17 @@ h, w = env.grid.shape
 	"строй непрерывную траекторию покрытия"
 То есть робот начнёт двигаться как робот-пылесос или газонокосилка длинными полосами.
 
-
+=== Hybrid Coverage Planner ===
+Идея:
+	Sweep-Line = глобальный каркас
+	Directional = локальная гибкость
+То есть
+	Далёкие цели
+		берём из sweep-line
+	Но локально	разрешаем:
+		небольшие отклонения
+	если:
+		цель ближе
+		меньше turns
+		меньше overlap
 

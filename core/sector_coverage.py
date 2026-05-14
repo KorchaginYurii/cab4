@@ -1,6 +1,8 @@
 from core.world_memory import CABBAGE
 import numpy as np
 from core.config import DIRECTION_BIAS_WEIGHT, BACKTRACK_PENALTY
+from core.tuning_config import runtime_config
+
 
 class SectorCoveragePlanner:
     def __init__(self):
@@ -230,3 +232,76 @@ class SectorCoveragePlanner:
             return None
 
         return self.cached_lines[0][0]
+
+    def get_next_target_hybrid(
+            self,
+            memory,
+            env,
+            sector_manager,
+            sector_id,
+            prev_pos=None
+    ):
+        # основная sweep-цель
+        sweep_target = self.get_next_target_sweep_line(
+            memory,
+            env,
+            sector_manager,
+            sector_id
+        )
+
+        if sweep_target is None:
+            return None
+
+        x, y = env.pos
+        sx, sy = sweep_target
+
+        sweep_dist = abs(sx - x) + abs(sy - y)
+
+        # собираем локальных кандидатов рядом
+        candidates = []
+
+        radius = runtime_config.get("LOCAL_TARGET_RADIUS", 3)
+
+        x1, x2, y1, y2 = sector_manager.get_sector_bounds(
+            sector_id,
+            memory.map.shape
+        )
+
+        for i in range(max(x1, x - radius), min(x2, x + radius + 1)):
+            for j in range(max(y1, y - radius), min(y2, y + radius + 1)):
+                if memory.map[i, j] == 1:
+                    candidates.append((i, j))
+
+        if len(candidates) == 0:
+            return sweep_target
+
+        best = sweep_target
+        best_score = sweep_dist
+
+        local_bonus = runtime_config.get("LOCAL_TARGET_BONUS", 2.0)
+        stickiness = runtime_config.get("SWEEP_STICKINESS", 1.5)
+
+        for tx, ty in candidates:
+            dist = abs(tx - x) + abs(ty - y)
+
+            score = dist
+
+            # если это не sweep target — даём штраф за отклонение
+            if (tx, ty) != sweep_target:
+                score += stickiness
+
+            # если локальная цель сильно ближе — бонус
+            if dist + local_bonus < sweep_dist:
+                score -= local_bonus
+
+            # штраф за немедленный backtrack
+            if prev_pos is not None:
+                px, py = prev_pos
+                if (tx, ty) == (px, py):
+                    score += 10.0
+
+            if score < best_score:
+                best_score = score
+                best = (tx, ty)
+
+        return best
