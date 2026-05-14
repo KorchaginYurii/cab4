@@ -11,13 +11,13 @@ from core.tuning_config import runtime_config
 
 
 SEARCH_SPACE = {
-    "LOCAL_TARGET_RADIUS": [2, 3, 4],
-    "SWEEP_STICKINESS": [1.0, 1.5, 2.0],
-    "STRAIGHT_BONUS": [0.01, 0.03, 0.05],
+    #"LOCAL_TARGET_RADIUS": [2, 3, 4],
+    #"SWEEP_STICKINESS": [1.0, 1.5, 2.0],
+    #"STRAIGHT_BONUS": [0.01, 0.03, 0.05],
 
-    #"LOCAL_TARGET_BONUS": [1.0, 2.0, 3.0],
-    #"TURN_CHANGE_PENALTY": [0.03, 0.05, 0.08],
-    #"TURN_COST_WEIGHT": [0.25, 0.3, 0.35],
+    "LOCAL_TARGET_BONUS": [1.0, 2.0, 3.0],
+    "TURN_CHANGE_PENALTY": [0.03, 0.05, 0.08],
+    "TURN_COST_WEIGHT": [0.25, 0.3, 0.35],
 } # 3 × 3 × 3 × 3 × 3 × 3 = 729 configs
 
 

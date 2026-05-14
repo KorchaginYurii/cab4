@@ -4,7 +4,7 @@ import torch
 # CONFIG VERSION
 # =========================================
 
-CONFIG_VERSION = "coverage_autotune_v1"
+CONFIG_VERSION = "coverage_autotune_v2"
 
 # =========================================
 # WINDOW / UI
@@ -59,7 +59,7 @@ DIR_NAMES = [
 # AUTO-TUNED PARAMETERS
 # =========================================
 
-TURN_COST_WEIGHT = 0.3
+TURN_COST_WEIGHT = 0.35
 
 UNKNOWN_COST_AVOID = 1.0
 UNKNOWN_COST_ALLOW = 0.3
@@ -75,7 +75,7 @@ DIRECTION_BIAS_WEIGHT = 2.0
 BACKTRACK_PENALTY = 5.0
 
 STRAIGHT_BONUS = 0.01
-TURN_CHANGE_PENALTY = 0.05
+TURN_CHANGE_PENALTY = 0.03
 
 LOCAL_TARGET_RADIUS = 4
 LOCAL_TARGET_BONUS = 2.0
