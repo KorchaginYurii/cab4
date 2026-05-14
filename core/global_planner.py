@@ -176,7 +176,21 @@ class AStarPlanner:
                 move_cost = MOVE_COST
 
                 turn_weight = runtime_config.get("TURN_COST_WEIGHT", 0.3)
-                rotate_cost = turn_weight * self.turn_cost(heading, target_heading)
+                straight_bonus = runtime_config.get("STRAIGHT_BONUS", 0.03)
+                turn_change_penalty = runtime_config.get("TURN_CHANGE_PENALTY", 0.05)
+
+                base_turn_cost = self.turn_cost(heading, target_heading)
+                rotate_cost = turn_weight * base_turn_cost
+
+                # бонус за продолжение движения прямо
+                if target_heading == heading:
+                    move_cost -= straight_bonus
+
+                # дополнительный мягкий штраф за смену направления
+                if target_heading != heading:
+                    rotate_cost += turn_change_penalty
+
+                move_cost = max(0.01, move_cost)
 
                 unknown_cost = self.memory_cell_extra_cost(
                     memory,

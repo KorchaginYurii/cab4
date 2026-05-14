@@ -225,9 +225,30 @@ h, w = env.grid.shape
 	micro turns
 	local overlap
 
-==== Adaptive Runtime Tuning ===
-
-
+==== Trajectory Smoothing ===
+	не просто shortest path
+	а smoother path
+= Turn-Aware A*
+Сейчас:
+	A* минимизирует стоимость
+Но можно сделать:
+	предпочитай длинные прямые сегменты
+Что это даст
+	Сильно уменьшит:
+		micro-turns
+		zig-zag
+		energy loss
+		overlap
+=== Sweep-Line Coverage Planner
+Идея:
+	не "выбери следующую капусту"
+а
+	"строй непрерывную траекторию покрытия"
+То есть робот начнёт двигаться как:
+	робот-пылесос
+или
+	газонокосилка
+длинными полосами.
 
 
 
