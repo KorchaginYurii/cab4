@@ -201,10 +201,31 @@ h, w = env.grid.shape
 Это уже переход от:
 	ручного тюнинга
 к:
-	automated system optimization
+	automated system optimiza
 	
-	
+=========================================
+==== Coverage Optimization 2.0 ==========
+=========================================
+То есть:
+	уменьшение overlap
+	уменьшение backtracking
+	уменьшение sector switching	
 
+==== Directional Coverage Bias
+Идея:
+	если робот движется вправо
+		→ предпочитай продолжать вправо
+	вместо:
+		вправо
+		вниз
+		вверх
+		влево
+Это резко уменьшает:
+	zig-zag
+	micro turns
+	local overlap
+
+==== Adaptive Runtime Tuning ===
 
 
 

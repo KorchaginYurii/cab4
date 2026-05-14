@@ -71,6 +71,9 @@ DYNAMIC_FAR_COST = 0.1
 
 REPLAN_INTERVAL = 5
 
+DIRECTION_BIAS_WEIGHT = 2.0
+BACKTRACK_PENALTY = 5.0
+
 # =========================================
 # RUNTIME TUNABLES
 # =========================================
@@ -104,6 +107,13 @@ TUNABLES = {
     # replanning
     "REPLAN_INTERVAL":
         REPLAN_INTERVAL,
+
+    "DIRECTION_BIAS_WEIGHT":
+        DIRECTION_BIAS_WEIGHT,
+
+    "BACKTRACK_PENALTY":
+        BACKTRACK_PENALTY,
+
 }
 
 # =========================================

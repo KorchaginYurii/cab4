@@ -6,7 +6,6 @@ from core.config import (
     DIRECTIONS,
     MOVE_COST,
     TURN_COST,
-    UNKNOWN_CELL_COST,
     UNKNOWN_COST_AVOID,
     UNKNOWN_COST_ALLOW,
     UNKNOWN_COST_EXPLORE,

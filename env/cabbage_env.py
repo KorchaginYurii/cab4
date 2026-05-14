@@ -142,7 +142,7 @@ class CabbageEnv:
 
         new.last_positions = deque(self.last_positions, maxlen=10)
         new.flood_cache = {}
-
+        new.recharge_count = self.recharge_count
 
         new.flood_map = self.flood_map.copy()
         new.danger_map = self.danger_map.copy()
@@ -274,9 +274,15 @@ class CabbageEnv:
 
         # ===== зарядка на базе =====
         if at_start and np.sum(self.grid == 1) > 0:
+            before = self.energy_system.energy
+
             self.energy_system.recharge()
-            self.recharge_count += 1
-            r += 5
+
+            after = self.energy_system.energy
+
+            if after > before:
+                self.recharge_count += 1
+                r += 5
 
         # ===== reward за возврат =====
         if all_collected:

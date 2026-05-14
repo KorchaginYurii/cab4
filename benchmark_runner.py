@@ -139,7 +139,7 @@ def main():
 
     rows = []
 
-    for i, seed in enumerate(BENCHMARK_SEEDS[:3]):
+    for i, seed in enumerate(BENCHMARK_SEEDS):#[:3]):
         print(f"\n🚀 Benchmark {i + 1}/{len(BENCHMARK_SEEDS)} | seed={seed}")
 
         result = run_one_mission(agent, seed)
@@ -152,7 +152,7 @@ def main():
             f"cabbage={result['collected']}/{result['total_cabbages']} | "
             f"energy={result['energy_used']:.1f} | "
             f"steps={result['steps']}/{result['limit']} | "
-            f"recharges={result['recharge_count']} "
+            f"recharges={result['recharges']} "
         )
 
     save_results(rows)
