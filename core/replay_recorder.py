@@ -55,6 +55,11 @@ class ReplayRecorder:
                 if hasattr(env, "dynamic_obstacles")
                 else []
             ),
+            "dynamic_predictions": (
+                dict(env.dynamic_obstacles.predicted_positions())
+                if hasattr(env, "dynamic_obstacles")
+                else {}
+            ),
         }
 
         self.frames.append(frame)

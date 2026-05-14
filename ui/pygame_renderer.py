@@ -330,6 +330,22 @@ class Renderer:
                 10,
                 2
             )
+
+        predictions = debug.get("dynamic_predictions", {}) if debug else {}
+
+        for (px, py), t in predictions.items():
+            if 0 <= px < env.grid.shape[0] and 0 <= py < env.grid.shape[1]:
+                pygame.draw.circle(
+                    self.screen,
+                    (255, 180, 0),
+                    (
+                        py * self.cell + self.cell // 2,
+                        px * self.cell + self.cell // 2
+                    ),
+                    max(2, self.cell // 5),
+                    1
+                )
+
         # =====================================================
         # HUD
         # =====================================================

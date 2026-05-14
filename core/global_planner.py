@@ -12,6 +12,7 @@ from core.config import (
 )
 from core.tuning_config import runtime_config
 
+
 class AStarPlanner:
     def __init__(self):
         pass
@@ -209,6 +210,11 @@ class AStarPlanner:
                 if memory is not None:
                     memory_dynamic_cost = memory.dynamic_risk(neighbor_pos) * 1.0
 
+                prediction_cost = self.dynamic_prediction_penalty(
+                    env,
+                    neighbor_pos
+                )
+
                 step_cost = (
                         move_cost
                         + rotate_cost
@@ -309,9 +315,17 @@ class AStarPlanner:
         if not hasattr(env, "dynamic_obstacles"):
             return 0.0
 
-        predicted = env.dynamic_obstacles.predicted_positions(horizon=3)
+        horizon = runtime_config.get("PREDICTION_HORIZON", 3)
+        base_cost = runtime_config.get("PREDICTION_COST", 1.2)
+        decay = runtime_config.get("PREDICTION_DECAY", 0.6)
 
-        if pos in predicted:
-            return 1.5
+        predicted = env.dynamic_obstacles.predicted_positions(
+            horizon=horizon
+        )
 
-        return 0.0
+        if pos not in predicted:
+            return 0.0
+
+        t = predicted[pos]
+
+        return base_cost * (decay ** (t - 1))

@@ -66,7 +66,10 @@ class DynamicObstacleManager:
                     continue
 
                 occupied.remove(obj.pos)
+
+                obj.prev_pos = obj.pos
                 obj.pos = np
+
                 occupied.add(np)
                 break
 
@@ -82,5 +85,24 @@ class DynamicObstacleManager:
 
             for t in range(1, horizon + 1):
                 preds.add((x + vx * t, y + vy * t))
+
+        return preds
+
+    def predicted_positions(self, horizon=3):
+        preds = {}
+
+        for obj in self.obstacles:
+            x, y = obj.pos
+            px, py = obj.prev_pos
+
+            vx = x - px
+            vy = y - py
+
+            if vx == 0 and vy == 0:
+                continue
+
+            for t in range(1, horizon + 1):
+                p = (x + vx * t, y + vy * t)
+                preds[p] = t
 
         return preds
