@@ -6,6 +6,7 @@ import torch
 
 CONFIG_VERSION = "traffic_autotune_v1"
 
+USE_LOCAL_RL = False
 # =========================================
 # WINDOW / UI
 # =========================================

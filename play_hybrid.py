@@ -9,28 +9,26 @@ from ui.pygame_renderer import Renderer
 from core.checkpoint import CheckpointManager
 from core.replay_recorder import ReplayRecorder
 from core.config import MAP_H, MAP_W
+from core.config import USE_LOCAL_RL
 
 recorder = ReplayRecorder()
 env = CabbageEnv(MAP_H, MAP_W)
 env.reset()
 
-# ======================================
-# RL AGENT
-# ======================================
-local_agent = CabbageAgent()
+if USE_LOCAL_RL:
+    local_agent = CabbageAgent()
+    ckpt = CheckpointManager(
+        k_best=3,
+        project_name="Cab4"
+    )
+    ckpt.load_checkpoint(local_agent)
+    start_ep, best = ckpt.load_checkpoint(local_agent)
 
-# ======================================
-# LOAD CHECKPOINT
-# ======================================
-ckpt = CheckpointManager()
 
-start_ep, best = ckpt.load_checkpoint(local_agent)
-
-# ======================================
-# HYBRID WRAPPER
-# ======================================
-agent = HybridAgent(local_agent=local_agent)
-#agent = HybridAgent()
+agent = HybridAgent(
+    local_agent=local_agent if USE_LOCAL_RL else None,
+    robot_id="robot_1"
+)
 agent.reset()
 
 renderer = Renderer()

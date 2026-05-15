@@ -4,6 +4,7 @@ import random
 import numpy as np
 import torch
 
+from core.config import USE_LOCAL_RL
 from core.config import MAP_H, MAP_W
 from env.cabbage_env import CabbageEnv
 from agents.cabbage_agent import CabbageAgent
@@ -123,17 +124,16 @@ def print_summary(rows):
 
 
 def main():
-    local_agent = CabbageAgent()
-
-    ckpt = CheckpointManager(
-        k_best=3,
-        project_name="Cab4"
-    )
-
-    ckpt.load_checkpoint(local_agent)
+    if USE_LOCAL_RL:
+        local_agent = CabbageAgent()
+        ckpt = CheckpointManager(
+            k_best=3,
+            project_name="Cab4"
+        )
+        ckpt.load_checkpoint(local_agent)
 
     agent = HybridAgent(
-        local_agent=local_agent,
+        local_agent=local_agent if USE_LOCAL_RL else None,
         robot_id="robot_1"
     )
 
