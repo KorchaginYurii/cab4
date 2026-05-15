@@ -613,6 +613,7 @@ class HybridAgent:
             "recovery_mode": self.recovery.recovery_mode,
             "no_path_counter": self.recovery.no_path_counter,
             "blocked_counter": self.recovery.blocked_counter,
+            "recovery_counts": dict(self.recovery.recovery_counts),
         }
 
         # =====================================================

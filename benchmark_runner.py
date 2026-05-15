@@ -71,6 +71,7 @@ def run_one_mission(agent, seed, max_extra_steps_mult=2):
     overlap_rate = debug.get("overlap_rate", 0.0)
     sector_switches = debug.get("sector_switches", 0)
     recharges = getattr(env, "recharge_count", 0)
+    recovery_counts = debug.get("recovery_counts", {})
 
     return {
         "seed": seed,
@@ -88,6 +89,11 @@ def run_one_mission(agent, seed, max_extra_steps_mult=2):
         "overlap_rate": overlap_rate,
         "sector_switches": sector_switches,
         "recharges": recharges,
+        "recovery_waits": recovery_counts.get("WAIT", 0),
+        "recovery_backoffs": recovery_counts.get("BACK_OFF", 0),
+        "recovery_explore_alt": recovery_counts.get("EXPLORE_ALT", 0),
+        "no_path_events": debug.get("no_path_counter", 0),
+        "blocked_events": debug.get("blocked_counter", 0),
     }
 
 

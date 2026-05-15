@@ -343,8 +343,13 @@ CONFIG_VERSION = "traffic_autotune_v1"
 	RETURN_SAFE
 	EXPLORE_ALT
 Это очень нужно перед большими картами 100×200.
-
-
+=== Recovery Metrics + Benchmark Visibility ===
+Добавим в CSV:
+	recovery_waits
+	recovery_backoffs
+	recovery_explore_alt
+	no_path_events
+	blocked_events
 
 
 
