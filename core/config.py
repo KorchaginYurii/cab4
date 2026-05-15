@@ -37,9 +37,11 @@ ACTIONS = [
     (0, 1),    # RIGHT
     (0, -1),   # LEFT
     (1, 0),    # DOWN
-    (-1, 0)    # UP
+    (-1, 0),   # UP
+    (0, 0)     # WAIT
 ]
 
+WAIT_ACTION = 4
 NUM_ACTIONS = len(ACTIONS)
 
 DIRECTIONS = [

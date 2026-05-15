@@ -350,6 +350,16 @@ CONFIG_VERSION = "traffic_autotune_v1"
 	recovery_explore_alt
 	no_path_events
 	blocked_events
-
+	
+=== True WAIT Action ====
+Потому что теперь recovery infrastructure уже есть.
+Сейчас:
+	WAIT -> safe_detour_action()
+а нужно:
+	robot реально ждёт
+	dynamic obstacle проходит
+	path снова становится хорошим
+Это особенно важно для узких коридоров.
+Тогда WAIT перестанет вредить и станет мощным инструментом.
 
 

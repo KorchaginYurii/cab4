@@ -181,6 +181,7 @@ class CabbageEnv:
 
         dx, dy = ACTIONS[a]
         x, y = self.pos
+        is_wait = (dx == 0 and dy == 0)
 
         h, w = self.grid.shape
 
@@ -189,15 +190,19 @@ class CabbageEnv:
 
         energy_spent = 0.0
 
-        target_heading = self.action_direction(a)
-        turn_cost = self.turn_cost_to(target_heading)
+        if not is_wait:
+            target_heading = self.action_direction(a)
+            turn_cost = self.turn_cost_to(target_heading)
 
-        if turn_cost > 0:
-            self.turn_count[x][y] += 1
-            self.energy_system.spend(turn_cost)
-            energy_spent += turn_cost
+            if turn_cost > 0:
+                self.turn_count[x][y] += 1
+                self.total_turns += 1
+                self.energy_system.spend(turn_cost)
+                energy_spent += turn_cost
 
-        self.heading = target_heading
+            self.heading = target_heading
+        else:
+            turn_cost = 0
 
         # reward базовый
         r = -0.05
@@ -218,9 +223,13 @@ class CabbageEnv:
             r -= 0.5
 
         # энергия за реальное движение
-        if (nx, ny) != (x, y):
+        if not is_wait and (nx, ny) != (x, y):
             self.energy_system.spend_move()
             energy_spent += MOVE_COST
+
+        # штраф за WAIT
+        if is_wait:
+            r -= 0.02
 
         # Когда есть поворот:
         if turn_cost > 0:
@@ -510,6 +519,9 @@ class CabbageEnv:
 
     def action_direction(self, a):
         dx, dy = ACTIONS[a]
+
+        if dx == 0 and dy == 0:
+            return self.heading
 
         for i, (hx, hy) in enumerate(DIRECTIONS):
             if (dx, dy) == (hx, hy):

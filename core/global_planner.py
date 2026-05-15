@@ -38,7 +38,7 @@ class AStarPlanner:
 
             x, y = current
             h, w = env.grid.shape
-            for dx, dy in ACTIONS:
+            for dx, dy in ACTIONS[:4]:
                 nx = max(0, min(h - 1, x + dx))
                 ny = max(0, min(w - 1, y + dy))
 
@@ -142,7 +142,7 @@ class AStarPlanner:
                 best_goal_state = current
                 break
 
-            for dx, dy in ACTIONS:
+            for dx, dy in ACTIONS[:4]:
                 nx = max(0, min(h - 1, x + dx))
                 ny = max(0, min(w - 1, y + dy))
 

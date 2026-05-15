@@ -52,7 +52,7 @@ class FailureRecoveryManager:
         if len(self.replan_history) < self.replan_history.maxlen:
             return False
 
-        return sum(self.replan_history) >= 8
+        return sum(self.replan_history) >= 11
 
     def report_no_path(self):
         self.no_path_counter += 1

@@ -18,7 +18,7 @@ from core.config import (
     OPPORTUNISTIC_MIN_CABBAGES,
 )
 from core.failure_recovery import FailureRecoveryManager
-
+from core.config import WAIT_ACTION
 
 class HybridAgent:
     def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
@@ -701,7 +701,7 @@ class HybridAgent:
         x, y = env.pos
         h, w = env.grid.shape
 
-        for a, (dx, dy) in enumerate(ACTIONS):
+        for a, (dx, dy) in enumerate(ACTIONS[:4]):
             nx = max(0, min(h - 1, x + dx))
             ny = max(0, min(w - 1, y + dy))
             np_ = (nx, ny)
@@ -819,7 +819,7 @@ class HybridAgent:
         Пока у нас нет action='wait', поэтому выбираем самый безопасный малый detour.
         Позже можно добавить отдельное действие WAIT.
         """
-        return self.safe_detour_action(env)
+        return WAIT_ACTION
 
     def backoff_action(self, env):
         """
@@ -837,7 +837,7 @@ class HybridAgent:
         best_action = None
         best_score = 1e18
 
-        for a, (dx, dy) in enumerate(ACTIONS):
+        for a, (dx, dy) in enumerate(ACTIONS[:4]):
             nx = max(0, min(env.grid.shape[0] - 1, x + dx))
             ny = max(0, min(env.grid.shape[1] - 1, y + dy))
 
