@@ -88,6 +88,9 @@ OPPORTUNISTIC_MIN_CABBAGES = 1
 PREDICTION_HORIZON = 5
 PREDICTION_COST = 0.6
 PREDICTION_DECAY = 0.8
+
+DYNAMIC_TRAFFIC_COST = 0.4
+
 # =========================================
 # RUNTIME TUNABLES
 # =========================================
@@ -115,6 +118,7 @@ TUNABLES = {
     "PREDICTION_HORIZON": PREDICTION_HORIZON,
     "PREDICTION_COST": PREDICTION_COST,
     "PREDICTION_DECAY": PREDICTION_DECAY,
+    "DYNAMIC_TRAFFIC_COST": DYNAMIC_TRAFFIC_COST,
 }
 
 # =========================================

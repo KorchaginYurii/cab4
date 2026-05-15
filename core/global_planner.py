@@ -207,8 +207,17 @@ class AStarPlanner:
                 prediction_cost = self.dynamic_prediction_penalty(env, neighbor_pos)
 
                 memory_dynamic_cost = 0.0
+
                 if memory is not None:
                     memory_dynamic_cost = memory.dynamic_risk(neighbor_pos) * 1.0
+
+                traffic_cost = 0.0
+
+                if memory is not None:
+                    traffic_cost = (
+                            memory.dynamic_traffic_risk(neighbor_pos)
+                            * runtime_config.get("DYNAMIC_TRAFFIC_COST", 0.4)
+                    )
 
                 prediction_cost = self.dynamic_prediction_penalty(
                     env,
@@ -222,6 +231,7 @@ class AStarPlanner:
                         + dynamic_cost
                         + prediction_cost
                         + memory_dynamic_cost
+                        + traffic_cost
                 )
 
                 neighbor_state = (nx, ny, target_heading)
@@ -322,8 +332,6 @@ class AStarPlanner:
         predicted = env.dynamic_obstacles.predicted_positions(
             horizon=horizon
         )
-        #if pos in predicted:
-        #    print("PRED HIT", pos, "t=", predicted[pos])
 
         if pos not in predicted:
             return 0.0

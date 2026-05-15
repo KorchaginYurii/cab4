@@ -346,6 +346,35 @@ class Renderer:
                     1
                 )
 
+        if debug is not None and debug.get("dynamic_traffic") is not None:
+            traffic = debug["dynamic_traffic"]
+            max_v = np.max(traffic)
+
+            if max_v > 0:
+                overlay = pygame.Surface((self.map_w, self.map_h), pygame.SRCALPHA)
+
+                for i in range(traffic.shape[0]):
+                    for j in range(traffic.shape[1]):
+                        v = traffic[i, j] / max_v
+
+                        if v <= 0.05:
+                            continue
+
+                        alpha = int(120 * v)
+
+                        pygame.draw.rect(
+                            overlay,
+                            (255, 80, 0, alpha),
+                            (
+                                j * self.cell,
+                                i * self.cell,
+                                self.cell,
+                                self.cell
+                            )
+                        )
+
+                self.screen.blit(overlay, (0, 0))
+
         # =====================================================
         # HUD
         # =====================================================

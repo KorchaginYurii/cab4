@@ -293,9 +293,13 @@ h, w = env.grid.shape
 	"obstacle движется туда"
 И planner начнёт избегать:
 будущих конфликтов а не только текущих.
+CONFIG_VERSION = "predictive_autotune_v1"
 
-
-
+==== Dynamic Traffic Heatmap ====
+память о местах, где часто появляются dynamic obstacle
+Идея:
+	агент запоминает где часто проходили dynamic obstacles
+	И planner начинает предпочитать менее загруженные коридоры
 
 
 

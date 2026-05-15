@@ -582,13 +582,13 @@ class HybridAgent:
             "opportunistic_sector":
                 getattr(self, "last_opportunistic_sector", None),
 
-
+            "dynamic_predictions":
+                dict(env.dynamic_obstacles.predicted_positions())
+                if hasattr(env, "dynamic_obstacles")
+                else {},
+            "dynamic_traffic": self.memory.dynamic_traffic.copy(),
         }
-        debug["dynamic_predictions"] = (
-            dict(env.dynamic_obstacles.predicted_positions())
-            if hasattr(env, "dynamic_obstacles")
-            else {}
-        )
+
         # =====================================================
         # 11. SAVE POSITION
         # =====================================================

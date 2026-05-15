@@ -21,6 +21,7 @@ class WorldMemory:
         self.cleaned = np.zeros(grid_shape, dtype=np.float32)
         self.seen = np.zeros(grid_shape, dtype=np.float32)
         self.dynamic_seen = np.zeros(grid_shape, dtype=np.float32)
+        self.dynamic_traffic = np.zeros(grid_shape, dtype=np.float32)
 
     def observe_full(self, env):
         """
@@ -59,6 +60,13 @@ class WorldMemory:
         if hasattr(env, "dynamic_obstacles"):
             for x, y in env.dynamic_obstacles.positions():
                 self.dynamic_seen[x, y] = 1.0
+
+        # traffic slowly decays
+        self.dynamic_traffic *= 0.995
+
+        if hasattr(env, "dynamic_obstacles"):
+            for x, y in env.dynamic_obstacles.positions():
+                self.dynamic_traffic[x, y] += 1.0
 
     def mark_cleaned(self, pos):
         x, y = pos
@@ -181,3 +189,16 @@ class WorldMemory:
 
         x, y = pos
         return float(self.dynamic_seen[x, y])
+
+    def dynamic_traffic_risk(self, pos):
+        if not hasattr(self, "dynamic_traffic"):
+            return 0.0
+
+        x, y = pos
+
+        max_v = np.max(self.dynamic_traffic)
+
+        if max_v <= 0:
+            return 0.0
+
+        return float(self.dynamic_traffic[x, y] / max_v)
