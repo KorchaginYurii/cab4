@@ -15,10 +15,14 @@ SEARCH_SPACE = {
     #"SWEEP_STICKINESS": [1.0, 1.5, 2.0],
     #"STRAIGHT_BONUS": [0.01, 0.03, 0.05],
 
-    "LOCAL_TARGET_BONUS": [1.0, 2.0, 3.0],
-    "TURN_CHANGE_PENALTY": [0.03, 0.05, 0.08],
-    "TURN_COST_WEIGHT": [0.25, 0.3, 0.35],
-} # 3 × 3 × 3 × 3 × 3 × 3 = 729 configs
+    #"LOCAL_TARGET_BONUS": [1.0, 2.0, 3.0],
+    #"TURN_CHANGE_PENALTY": [0.03, 0.05, 0.08],
+    #"TURN_COST_WEIGHT": [0.25, 0.3, 0.35],
+
+    "PREDICTION_COST": [0.6, 1.2, 2.0],
+    "PREDICTION_HORIZON": [3, 5, 7],
+    "PREDICTION_DECAY": [0.4, 0.6, 0.8],
+}
 
 
 def config_product(space):

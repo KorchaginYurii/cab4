@@ -4,7 +4,7 @@ import torch
 # CONFIG VERSION
 # =========================================
 
-CONFIG_VERSION = "predictive_navigation_v1"
+CONFIG_VERSION = "predictive_autotune_v1"
 
 # =========================================
 # WINDOW / UI
@@ -85,9 +85,9 @@ OPPORTUNISTIC_RETURN_MARGIN = 5.0
 OPPORTUNISTIC_MAX_EXTRA_COST = 40.0
 OPPORTUNISTIC_MIN_CABBAGES = 1
 
-PREDICTION_HORIZON = 3
-PREDICTION_COST = 1.2
-PREDICTION_DECAY = 0.6
+PREDICTION_HORIZON = 5
+PREDICTION_COST = 0.6
+PREDICTION_DECAY = 0.8
 # =========================================
 # RUNTIME TUNABLES
 # =========================================
