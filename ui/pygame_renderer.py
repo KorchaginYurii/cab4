@@ -373,6 +373,10 @@ class Renderer:
                             )
                         )
 
+
+
+
+
                 self.screen.blit(overlay, (0, 0))
 
         # =====================================================
@@ -602,6 +606,19 @@ class Renderer:
                 y0,
                 risk_color
             )
+
+            recovery_mode = debug.get("recovery_mode", None)
+
+            if recovery_mode is not None:
+                y0 += 22
+                self.draw_text(
+                    f"RECOVERY: {recovery_mode}",
+                    10,
+                    y0,
+                    (255, 100, 100)
+                )
+
+
 
         pygame.display.flip()
 

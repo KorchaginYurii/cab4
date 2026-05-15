@@ -17,6 +17,8 @@ from core.config import (
     OPPORTUNISTIC_MAX_EXTRA_COST,
     OPPORTUNISTIC_MIN_CABBAGES,
 )
+from core.failure_recovery import FailureRecoveryManager
+
 
 class HybridAgent:
     def __init__(self, local_agent=None, robot_id="robot_1", blackboard=None):
@@ -43,6 +45,7 @@ class HybridAgent:
         self.replan_cooldown = 0
         self.prev_pos = None
         self.mission = MissionPlanner()
+        self.recovery = FailureRecoveryManager()
 
     def reset(self):
 
@@ -56,6 +59,7 @@ class HybridAgent:
         self.replan_interval = 8
         self.replan_cooldown = 0
         self.prev_pos = None
+        self.recovery.reset()
 
     def nearest_cabbage(self, env):
         cabbages = np.argwhere(env.grid == 1)
@@ -344,8 +348,10 @@ class HybridAgent:
         blocked = self.path_is_blocked(env)
 
         if blocked:
+            self.recovery.report_blocked()
             need_replan = True
             self.replan_cooldown = 0
+
 
         if self.replan_cooldown <= 0:
             need_replan = True
@@ -353,7 +359,7 @@ class HybridAgent:
         if self.goal is not None and env.pos == self.goal:
             need_replan = True
 
-        # dynamic obstacle occupies goal
+
         dynamic_positions = (
             env.dynamic_obstacles.positions()
             if hasattr(env, "dynamic_obstacles")
@@ -402,6 +408,11 @@ class HybridAgent:
             else:
                 self.path = None
 
+            if self.path is None:
+                self.recovery.report_no_path()
+            else:
+                self.recovery.clear_soft_failures()
+
             self.replan_cooldown = current_replan_interval
 
         else:
@@ -435,18 +446,30 @@ class HybridAgent:
                 )
 
         # =====================================================
-        # 8. ACTION SELECTION
+        # 8. ACTION SELECTION / RECOVERY
         # =====================================================
-        if self.path is not None and len(self.path) >= 2:
+        recovery_mode = self.recovery.choose_recovery_mode()
 
-            action = self.action_from_path(
-                env,
-                self.path
-            )
+        if recovery_mode == "WAIT":
+            action = self.safe_wait_action(env)
+
+        elif recovery_mode == "BACK_OFF":
+            action = self.backoff_action(env)
+
+        elif recovery_mode == "EXPLORE_ALT":
+            self.goal = None
+            self.path = None
+            self.replan_cooldown = 0
+            action = self.safe_detour_action(env)
 
         else:
-
-            action = self.safe_detour_action(env)
+            if self.path is not None and len(self.path) >= 2:
+                action = self.action_from_path(
+                    env,
+                    self.path
+                )
+            else:
+                action = self.safe_detour_action(env)
 
         # =====================================================
         # 9. METRICS
@@ -587,12 +610,16 @@ class HybridAgent:
                 if hasattr(env, "dynamic_obstacles")
                 else {},
             "dynamic_traffic": self.memory.dynamic_traffic.copy(),
+            "recovery_mode": self.recovery.recovery_mode,
+            "no_path_counter": self.recovery.no_path_counter,
+            "blocked_counter": self.recovery.blocked_counter,
         }
 
         # =====================================================
         # 11. SAVE POSITION
         # =====================================================
         self.prev_pos = env.pos
+        self.recovery.update(env, debug)
 
         return action, debug
 
@@ -785,3 +812,58 @@ class HybridAgent:
         self.last_opportunistic_sector = best_sector
 
         return best_sector
+
+    def safe_wait_action(self, env):
+        """
+        Пока у нас нет action='wait', поэтому выбираем самый безопасный малый detour.
+        Позже можно добавить отдельное действие WAIT.
+        """
+        return self.safe_detour_action(env)
+
+    def backoff_action(self, env):
+        """
+        Пытается выйти из локального застревания:
+        предпочтительно не идти в последнюю часто посещённую клетку.
+        """
+        dynamic_positions = (
+            env.dynamic_obstacles.positions()
+            if hasattr(env, "dynamic_obstacles")
+            else set()
+        )
+
+        x, y = env.pos
+
+        best_action = None
+        best_score = 1e18
+
+        for a, (dx, dy) in enumerate(ACTIONS):
+            nx = max(0, min(env.grid.shape[0] - 1, x + dx))
+            ny = max(0, min(env.grid.shape[1] - 1, y + dy))
+
+            p = (nx, ny)
+
+            if p in env.obstacles:
+                continue
+
+            if p in dynamic_positions:
+                continue
+
+            score = 0.0
+
+            if hasattr(env, "visit_count"):
+                score += env.visit_count[nx, ny] * 2.0
+
+            if p == getattr(self, "prev_pos", None):
+                score += 5.0
+
+            if p == env.start_pos and np.sum(env.grid == 1) > 0:
+                score += 10.0
+
+            if score < best_score:
+                best_score = score
+                best_action = a
+
+        if best_action is None:
+            return self.safe_detour_action(env)
+
+        return best_action

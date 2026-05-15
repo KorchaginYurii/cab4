@@ -306,8 +306,43 @@ CONFIG_VERSION = "predictive_autotune_v1"
 	3. long-term traffic heatmap
 Это очень сильная связка.
 делаем Traffic-aware benchmark + autotune:
+CONFIG_VERSION = "traffic_autotune_v1"
 
+================================================
+убрать зависимость от RL как обязательной части
+ и оформить систему как чистый robotics stack.
+1. config.py
+   USE_LOCAL_RL = False
 
+2. play_hybrid.py
+   загружает CabbageAgent только если USE_LOCAL_RL=True
+
+3. benchmark_runner.py
+   тоже условно загружает RL
+
+4. HybridAgent
+   local_agent остаётся optional fallback
+
+5. README / структура
+   честно разделить:
+   classical planner mode
+   hybrid RL fallback mode
+===========================================
+=== Failure Recovery Manager ===
+====================================
+Он будет ловить ситуации:
+	нет пути
+	застрял
+	слишком много replan
+	динамическое препятствие перекрыло коридор
+	энергии мало
+и включать специальные режимы:
+	WAIT
+	BACK_OFF
+	REPLAN_WIDE
+	RETURN_SAFE
+	EXPLORE_ALT
+Это очень нужно перед большими картами 100×200.
 
 
 
