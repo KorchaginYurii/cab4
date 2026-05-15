@@ -300,8 +300,12 @@ CONFIG_VERSION = "predictive_autotune_v1"
 Идея:
 	агент запоминает где часто проходили dynamic obstacles
 	И planner начинает предпочитать менее загруженные коридоры
-
-
+Теперь система умеет три уровня динамической безопасности:
+	1. current dynamic obstacle
+	2. predicted future position
+	3. long-term traffic heatmap
+Это очень сильная связка.
+делаем Traffic-aware benchmark + autotune:
 
 
 

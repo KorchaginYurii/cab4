@@ -4,7 +4,7 @@ import torch
 # CONFIG VERSION
 # =========================================
 
-CONFIG_VERSION = "predictive_autotune_v1"
+CONFIG_VERSION = "traffic_autotune_v1"
 
 # =========================================
 # WINDOW / UI
@@ -87,9 +87,9 @@ OPPORTUNISTIC_MIN_CABBAGES = 1
 
 PREDICTION_HORIZON = 5
 PREDICTION_COST = 0.6
-PREDICTION_DECAY = 0.8
+PREDICTION_DECAY = 0.6
 
-DYNAMIC_TRAFFIC_COST = 0.4
+DYNAMIC_TRAFFIC_COST = 0.1
 
 # =========================================
 # RUNTIME TUNABLES

@@ -19,9 +19,13 @@ SEARCH_SPACE = {
     #"TURN_CHANGE_PENALTY": [0.03, 0.05, 0.08],
     #"TURN_COST_WEIGHT": [0.25, 0.3, 0.35],
 
-    "PREDICTION_COST": [0.6, 1.2, 2.0],
-    "PREDICTION_HORIZON": [3, 5, 7],
-    "PREDICTION_DECAY": [0.4, 0.6, 0.8],
+    #"PREDICTION_COST": [0.6, 1.2, 2.0],
+    #"PREDICTION_HORIZON": [3, 5, 7],
+    #"PREDICTION_DECAY": [0.4, 0.6, 0.8],
+
+    "DYNAMIC_TRAFFIC_COST": [0.1, 0.3, 0.5, 0.8],
+    "PREDICTION_COST": [0.4, 0.6, 0.8],
+    "PREDICTION_DECAY": [0.6, 0.8, 0.9],
 }
 
 
