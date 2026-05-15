@@ -4,7 +4,7 @@ import torch
 # CONFIG VERSION
 # =========================================
 
-CONFIG_VERSION = "coverage_autotune_v2"
+CONFIG_VERSION = "predictive_navigation_v1"
 
 # =========================================
 # WINDOW / UI

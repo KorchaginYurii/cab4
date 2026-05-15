@@ -139,7 +139,7 @@ def main():
 
     rows = []
 
-    for i, seed in enumerate(BENCHMARK_SEEDS[:5]):
+    for i, seed in enumerate(BENCHMARK_SEEDS):#[:5]):
         print(f"\n🚀 Benchmark {i + 1}/{len(BENCHMARK_SEEDS)} | seed={seed}")
 
         result = run_one_mission(agent, seed)

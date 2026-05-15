@@ -322,6 +322,8 @@ class AStarPlanner:
         predicted = env.dynamic_obstacles.predicted_positions(
             horizon=horizon
         )
+        #if pos in predicted:
+        #    print("PRED HIT", pos, "t=", predicted[pos])
 
         if pos not in predicted:
             return 0.0
