@@ -231,12 +231,6 @@ class CabbageEnv:
         if is_wait:
             r -= 0.02
 
-        # Когда есть поворот:
-        if turn_cost > 0:
-            self.turn_count[x][y] += 1
-            self.total_turns += 1
-            self.energy_system.spend(turn_cost)
-            energy_spent += turn_cost
 
         # нож только на клетке с капустой
         self.knife_on = ((nx, ny) != (x, y)) and (self.grid[nx][ny] == 1)
