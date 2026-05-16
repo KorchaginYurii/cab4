@@ -352,7 +352,7 @@ class CabbageEnv:
         blocked = 0
         h, w = self.grid.shape
 
-        for dx, dy in ACTIONS:
+        for dx, dy in ACTIONS[:4]:
             nx = max(0, min(h, x + dx))
             ny = max(0, min(w, y + dy))
 
@@ -508,7 +508,7 @@ class CabbageEnv:
 
             visited.add((x, y))
 
-            for dx, dy in ACTIONS:
+            for dx, dy in ACTIONS[:4]:
                 nx, ny = x + dx, y + dy
 
                 if 0 <= nx < h and 0 <= ny < w:
@@ -552,7 +552,7 @@ class CabbageEnv:
 
             visited.add((x, y))
 
-            for dx, dy in ACTIONS:
+            for dx, dy in ACTIONS[:4]:
                 nx, ny = x + dx, y + dy
 
                 if not (0 <= nx < h and 0 <= ny < w):

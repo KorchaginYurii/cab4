@@ -8,7 +8,6 @@ from core.sector_coverage import SectorCoveragePlanner
 from core.energy_predictor import EnergyPredictor
 from core.world_memory import WorldMemory
 from core.frontier_manager import FrontierManager
-from core.config import ACTIONS
 from core.team_blackboard import TeamBlackboard
 from core.tuning_config import runtime_config
 from core.mission_planner import MissionPlanner
@@ -270,7 +269,7 @@ class HybridAgent:
         dx = nx - x
         dy = ny - y
 
-        for i, (adx, ady) in enumerate(ACTIONS):
+        for i, (adx, ady) in enumerate(ACTIONS[:4]):
             if (adx, ady) == (dx, dy):
                 return i
 

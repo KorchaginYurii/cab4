@@ -46,9 +46,10 @@ class DynamicObstacleManager:
             x, y = obj.pos
             h, w = env.grid.shape
 
-            random.shuffle(ACTIONS)
+            moves = ACTIONS[:4].copy()
+            random.shuffle(moves)
 
-            for dx, dy in ACTIONS:
+            for dx, dy in moves:
                 nx = max(0, min(h - 1, x + dx))
                 ny = max(0, min(w - 1, y + dy))
                 np = (nx, ny)
